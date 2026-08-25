@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-primary-50: #f0f4f8;
+  --color-primary-100: #d9e2ec;
+  --color-primary-200: #bcccdc;
+  --color-primary-500: #627d98;
+  --color-primary-600: #486581;
+  --color-primary-700: #334e68;
+  --color-primary-800: #243b53;
+  --color-primary-900: #102a43;
+  --color-accent-500: #3182ce;
+  --color-accent-600: #2b6cb0;
+}
+
+html,
+body {
+  @apply h-full overflow-hidden;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+#root {
+  @apply h-full;
+}
