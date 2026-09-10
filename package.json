@@ -18,10 +18,27 @@
     "vite": "^8.2.0"
   },
   "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "lucide-react": "^1.33.0",
+    "pg": "^8.23.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2",
     "xlsx": "^0.18.5"
-  }
+  },
+  "description": "A modern full-stack-ready web application for managing projects, employees, folders, and project-related files.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rajsingh16/Product-Warehouse.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rajsingh16/Product-Warehouse/issues"
+  },
+  "homepage": "https://github.com/rajsingh16/Product-Warehouse#readme"
 }

@@ -15,7 +15,7 @@ import { taskService } from '../services/taskService';
 import type { Employee, ProjectFile, Task, TaskStatus } from '../types';
 import { can } from '../utils/authorization';
 
-const statuses: TaskStatus[] = ['Pending', 'In Progress', 'Completed', 'On Hold', 'Cancelled'];
+const statuses: TaskStatus[] = ['Pending', 'In Progress', 'Completed', 'On Hold', 'Cancelled', '25% progress complete', '50% progress complete', '75% progress complete'];
 
 type TaskFormState = {
   taskId: string;

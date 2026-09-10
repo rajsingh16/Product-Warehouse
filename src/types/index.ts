@@ -50,7 +50,7 @@ export interface Project {
 }
 
 export type EmployeeStatus = 'active' | 'inactive';
-export type TaskStatus = 'Pending' | 'In Progress' | 'Completed' | 'On Hold' | 'Cancelled';
+export type TaskStatus = 'Pending' | 'In Progress' | 'Completed' | 'On Hold' | 'Cancelled' | '25% progress complete' | '50% progress complete' | '75% progress complete';
 export type RoleName = 'Administrator' | 'Manager' | 'Project Manager' | 'Employee' | 'Viewer';
 export type RoleId =
   | 'project_view'

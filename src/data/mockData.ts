@@ -188,7 +188,7 @@ function createSampleFiles(prefix: string, folderName: string): ProjectFile[] {
 }
 
 function createFolders(projectId: string): Project['folders'] {
-  return ['Informative Data', 'Analysis Data', 'Reference Data', 'Reports'].map((name) => ({
+  return ['Informative Data', 'Analysis Data', 'Analytics Data', 'Reports'].map((name) => ({
     id: `${projectId}-folder-${name.toLowerCase()}`,
     name,
     files: createSampleFiles(projectId, name),

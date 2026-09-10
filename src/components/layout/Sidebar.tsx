@@ -35,8 +35,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="flex items-center gap-3">
             <img src={logoIcon} alt="" className="h-11 w-11" />
             <div>
-              <p className="text-sm font-semibold text-slate-900">Project</p>
-              <p className="text-sm font-semibold text-slate-900">Warehouse</p>
+              <p className="text-sm font-semibold text-slate-900">ShanConnects</p>
             </div>
           </div>
           <button onClick={onClose} className="rounded-md p-1 hover:bg-slate-100 lg:hidden" aria-label="Close menu">

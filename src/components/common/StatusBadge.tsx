@@ -10,6 +10,9 @@ const classes: Record<string, string> = {
   Completed: 'bg-green-100 text-green-700',
   'On Hold': 'bg-purple-100 text-purple-700',
   Cancelled: 'bg-red-100 text-red-700',
+  '25% progress complete': 'bg-cyan-100 text-cyan-700',
+  '50% progress complete': 'bg-indigo-100 text-indigo-700',
+  '75% progress complete': 'bg-teal-100 text-teal-700',
 };
 
 export function StatusBadge({ status }: { status: Status }) {

@@ -27,25 +27,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const expire = (reason: 'idle' | 'tab') => {
-      sessionStorage.setItem('pw_session_expired_reason', reason);
+    const expire = () => {
+      sessionStorage.setItem('pw_session_expired_reason', 'idle');
       logout();
       navigate('/login', { replace: true });
     };
 
-    const handleVisibility = () => {
-      if (document.visibilityState === 'hidden') expire('tab');
-    };
-
-    document.addEventListener('visibilitychange', handleVisibility);
     const timer = window.setInterval(() => {
       const remainingMs = Math.max(0, SESSION_IDLE_TIMEOUT - (Date.now() - lastActivity));
       setSecondsRemaining(Math.ceil(remainingMs / 1000));
-      if (remainingMs <= 0) expire('idle');
+      if (remainingMs <= 0) expire();
     }, 250);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
       window.clearInterval(timer);
     };
   }, [isAuthenticated, lastActivity, logout, navigate]);

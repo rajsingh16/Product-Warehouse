@@ -1,4 +1,4 @@
-# Project Warehouse
+# ShanConnects
 
 A modern full-stack-ready web application for managing projects, employees, folders, and project-related files.
 
@@ -20,11 +20,15 @@ npm run preview
 
 ## Demo Login Credentials
 
-| User ID | Password  | Name        | Role            |
-|---------|-----------|-------------|-----------------|
-| admin   | admin123  | Raj Singh   | Administrator   |
-| john    | john123   | John Doe    | Project Manager |
-| sarah   | sarah123  | Sarah Smith | Team Lead       |
+
+| User ID | Password | Name        | Role            |
+| ------- | -------- | ----------- | --------------- |
+| admin   | admin123 | Raj Singh   | Administrator   |
+| john    | john123  | John Doe    | Project Manager |
+| sarah   | sarah123 | Sarah Smith | Team Lead       |
+
+
+
 
 ## Demo OTP
 
@@ -55,6 +59,8 @@ src/
 └── main.tsx            # Application entry point
 ```
 
+
+
 ## Features
 
 - Mock authentication with WhatsApp OTP simulation
@@ -66,16 +72,22 @@ src/
 - Responsive sidebar and enterprise-style UI
 - Toast notifications and confirmation dialogs
 
+
+
 ## Future Backend API Integration
 
 Replace mock implementations in `src/services/` with real HTTP calls:
 
-| Service | Future Endpoints |
-|---------|------------------|
-| `authService.ts` | `POST /api/auth/login`, `POST /api/auth/verify-otp`, `POST /api/auth/resend-otp` |
-| `projectService.ts` | `GET/POST/PUT/DELETE /api/projects` |
-| `fileService.ts` | `GET/POST/DELETE /api/projects/:id/folders/:id/files` |
-| `employeeService.ts` | `GET /api/employees`, `GET /api/employees/:id` |
+
+| Service              | Future Endpoints                                                                 |
+| -------------------- | -------------------------------------------------------------------------------- |
+| `authService.ts`     | `POST /api/auth/login`, `POST /api/auth/verify-otp`, `POST /api/auth/resend-otp` |
+| `projectService.ts`  | `GET/POST/PUT/DELETE /api/projects`                                              |
+| `fileService.ts`     | `GET/POST/DELETE /api/projects/:id/folders/:id/files`                            |
+| `employeeService.ts` | `GET /api/employees`, `GET /api/employees/:id`                                   |
+
+
+
 
 ## WhatsApp OTP Integration
 
@@ -86,6 +98,8 @@ Add in `authService.ts` after credential validation:
 3. Backend sends OTP via WhatsApp Business API
 4. Frontend receives only masked phone digits (e.g. ending in **45)
 5. `verifyOTP()` calls `POST /api/auth/verify-otp`
+
+
 
 ## Database Layer
 
@@ -99,3 +113,4 @@ Replace `localStorage` persistence in services with API calls. Mock data in `src
 - Use JWT or secure session cookies instead of localStorage for auth tokens
 - Validate file types server-side (not just extensions)
 - Enforce authorization server-side for projects and files
+

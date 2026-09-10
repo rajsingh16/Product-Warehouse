@@ -21,7 +21,7 @@ function generateId(): string {
 }
 
 function createDefaultFolders(projectId: string): Project['folders'] {
-  return ['Informative Data', 'Analysis Data', 'Reference Data', 'Reports'].map((name) => ({
+  return ['Informative Data', 'Analysis Data', 'Analytics Data', 'Reports'].map((name) => ({
     id: `${projectId}-folder-${name.toLowerCase().replace(/\s+/g, '-')}`,
     name,
     files: [],

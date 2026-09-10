@@ -29,7 +29,7 @@ export const authService = {
     };
 
     sessionStorage.setItem(PENDING_AUTH_KEY, JSON.stringify(pending));
-    console.info('[Project Warehouse] Demo OTP:', DEMO_OTP);
+    console.info('[ShanConnects] Demo OTP:', DEMO_OTP);
 
     return { success: true, pending };
   },
@@ -82,7 +82,7 @@ export const authService = {
     };
 
     sessionStorage.setItem(PENDING_AUTH_KEY, JSON.stringify(pending));
-    console.info('[Project Warehouse] Demo OTP (resent):', DEMO_OTP);
+    console.info('[ShanConnects] Demo OTP (resent):', DEMO_OTP);
 
     return { success: true, pending };
   },
