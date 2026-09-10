@@ -242,7 +242,7 @@ export function Tasks() {
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={downloadExcel}><FileSpreadsheet className="h-4 w-4" />Download Excel</Button>
             <Button variant="secondary" onClick={downloadCsv}><Download className="h-4 w-4" />Download CSV</Button>
-            {can(user, 'tasks:create') && <Button onClick={openCreate}><Plus className="h-4 w-4" />Add New Task</Button>}
+            {can(user, 'tasks:create') && <Button onClick={openCreate}><Plus className="h-4 w-4" />Assign Task</Button>}
           </div>
         </div>
       </div>
@@ -271,7 +271,7 @@ export function Tasks() {
         </div>
       </div>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Task' : 'Add New Task'} size="xl">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Task' : 'Assign Task'} size="xl">
         <form onSubmit={saveTask} className="grid gap-4 sm:grid-cols-2">
           <input value={form.taskId} onChange={(e) => setForm({ ...form, taskId: e.target.value })} placeholder="Task ID" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
           <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
