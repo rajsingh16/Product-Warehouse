@@ -5,6 +5,7 @@ import { Button } from '../components/common/Button';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { Modal } from '../components/common/Modal';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { Pagination } from '../components/common/Pagination';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -12,13 +13,16 @@ import { formatDate } from '../data/mockData';
 import { employeeService } from '../services/employeeService';
 import { fileService, getFileTypeFromExtension, isSupportedFile } from '../services/fileService';
 import { taskService } from '../services/taskService';
-import type { Employee, ProjectFile, Task, TaskStatus } from '../types';
+import type { Employee, Project, ProjectFile, Task, TaskStatus } from '../types';
 import { can } from '../utils/authorization';
+import { projectService } from '../services/projectService';
+import { taskMasterService } from '../services/taskService';
 
 const statuses: TaskStatus[] = ['Pending', 'In Progress', 'Completed', 'On Hold', 'Cancelled', '25% progress complete', '50% progress complete', '75% progress complete'];
 
 type TaskFormState = {
   taskId: string;
+  projectId: string;
   description: string;
   employeeId: string;
   assignedOn: string;
@@ -30,6 +34,7 @@ type TaskFormState = {
 
 const emptyForm: TaskFormState = {
   taskId: '',
+  projectId: '',
   description: '',
   employeeId: '',
   assignedOn: '',
@@ -44,6 +49,8 @@ export function Tasks() {
   const { showToast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [taskMaster, setTaskMaster] = useState<Array<{ taskId: string; taskName: string }>>([]);
   const [query, setQuery] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState({ taskId: '', dateFrom: '', dateTo: '', statuses: [] as TaskStatus[], employee: '' });
@@ -54,11 +61,16 @@ export function Tasks() {
   const [previewRef, setPreviewRef] = useState<Task | null>(null);
   const [form, setForm] = useState<TaskFormState>(emptyForm);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const loadData = async () => {
-    const [taskData, employeeData] = await Promise.all([taskService.getTasks(), employeeService.getEmployees()]);
-    setTasks(taskData);
-    setEmployees(employeeData);
+    try {
+      setLoadError('');
+      const [taskData, employeeData, projectData, taskMasterData] = await Promise.all([taskService.getTasks(), employeeService.getEmployees(), projectService.getProjects(), taskMasterService.getActive()]);
+      setTasks(taskData); setEmployees(employeeData); setProjects(projectData); setTaskMaster(taskMasterData);
+    } catch (err) { setLoadError(err instanceof Error ? err.message : 'Failed to load task data.'); }
   };
 
   useEffect(() => {
@@ -85,6 +97,9 @@ export function Tasks() {
     });
   }, [filters, query, tasks]);
 
+  useEffect(() => { setPage(1); }, [query, filters]);
+  const paginatedTasks = visibleTasks.slice((page - 1) * pageSize, page * pageSize);
+
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm);
@@ -96,11 +111,12 @@ export function Tasks() {
     setEditing(task);
     setForm({
       taskId: task.taskId,
+      projectId: task.projectId ?? '',
       description: task.description,
       employeeId: task.assignedTo.employeeId,
       assignedOn: task.assignedOn,
       referenceUrl: task.referenceLink?.kind === 'url' ? task.referenceLink.url ?? '' : '',
-      referenceFile: task.referenceLink?.kind === 'file' ? task.referenceLink.file ?? null : null,
+      referenceFile: task.referenceDocument ?? null,
       comments: task.comments,
       status: task.status,
     });
@@ -108,19 +124,21 @@ export function Tasks() {
     setModalOpen(true);
   };
 
-  const toTaskInput = (): Omit<Task, 'id'> => {
+  const toTaskInput = (): Omit<Task, 'id'> & { projectId: string } => {
     const employee = employees.find((item) => item.employeeId === form.employeeId);
     if (!employee) throw new Error('Assigned employee is required.');
+    if (!form.projectId) throw new Error('Project is required.');
+    if (!taskMaster.some((item) => item.taskId === form.taskId)) throw new Error('Select an active Task Master record.');
     return {
       taskId: form.taskId,
+      projectId: form.projectId,
       description: form.description,
       assignedTo: { employeeId: employee.employeeId, employeeName: employee.name },
       assignedOn: form.assignedOn,
-      referenceLink: form.referenceFile
-        ? { kind: 'file', label: form.referenceFile.name, file: form.referenceFile }
-        : form.referenceUrl
+      referenceLink: form.referenceUrl
           ? { kind: 'url', label: form.referenceUrl, url: form.referenceUrl }
           : undefined,
+      referenceDocument: form.referenceFile ?? undefined,
       comments: form.comments,
       status: form.status,
     };
@@ -247,14 +265,15 @@ export function Tasks() {
         </div>
       </div>
 
+      {loadError && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{loadError}</div>}
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1100px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50">
-              <tr>{['Actions', 'Task ID', 'Description', 'Assigned To', 'Assigned On', 'Reference Link', 'Comments', 'Status'].map((column) => <th key={column} className="px-4 py-3 font-medium text-slate-600">{column}</th>)}</tr>
+              <tr>{['Actions', 'Task ID', 'Description', 'Assigned To', 'Assigned On', 'Reference Link', 'Reference Document', 'Comments', 'Status'].map((column) => <th key={column} className="px-4 py-3 font-medium text-slate-600">{column}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {visibleTasks.map((task) => (
+              {paginatedTasks.map((task) => (
                 <tr key={task.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3"><div className="flex gap-2">{can(user, 'tasks:edit') && <Button variant="ghost" size="sm" onClick={() => openEdit(task)}><Pencil className="h-4 w-4" />Edit</Button>}{can(user, 'tasks:delete') && <Button variant="ghost" size="sm" onClick={() => setDeleting(task)}><Trash2 className="h-4 w-4 text-red-600" /></Button>}</div></td>
                   <td className="px-4 py-3 text-slate-600">{task.taskId}</td>
@@ -262,6 +281,7 @@ export function Tasks() {
                   <td className="px-4 py-3 text-slate-600">{task.assignedTo.employeeId} - {task.assignedTo.employeeName}</td>
                   <td className="px-4 py-3 text-slate-600">{formatDate(task.assignedOn)}</td>
                   <td className="px-4 py-3">{task.referenceLink ? <Button variant="ghost" size="sm" onClick={() => setPreviewRef(task)}><Eye className="h-4 w-4" />Preview</Button> : <span className="text-slate-400">None</span>}</td>
+                  <td className="px-4 py-3">{task.referenceDocument ? (task.referenceDocument.blobUrl || task.referenceDocument.content ? <Button variant="ghost" size="sm" onClick={() => setPreviewRef(task)}><Eye className="h-4 w-4" />Preview</Button> : <span className="text-slate-600">{task.referenceDocument.name}</span>) : <span className="text-slate-400">None</span>}</td>
                   <td className="px-4 py-3 text-slate-600">{task.comments.length > 500 ? <span>{task.comments.slice(0, 500)}... <button className="font-medium text-slate-900 underline" onClick={() => setViewComment(task)}>View More</button></span> : task.comments}</td>
                   <td className="px-4 py-3"><StatusBadge status={task.status} /></td>
                 </tr>
@@ -271,9 +291,17 @@ export function Tasks() {
         </div>
       </div>
 
+      <Pagination page={page} pageSize={pageSize} total={visibleTasks.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Task' : 'Assign Task'} size="xl">
         <form onSubmit={saveTask} className="grid gap-4 sm:grid-cols-2">
-          <input value={form.taskId} onChange={(e) => setForm({ ...form, taskId: e.target.value })} placeholder="Task ID" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
+          <div>
+            <input list="task-master-options" value={form.taskId} onChange={(e) => setForm({ ...form, taskId: e.target.value })} placeholder="Task ID" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+            <datalist id="task-master-options">{taskMaster.map((item) => <option key={item.taskId} value={item.taskId}>{item.taskName}</option>)}</datalist>
+          </div>
+          <select value={form.projectId} onChange={(e) => setForm({ ...form, projectId: e.target.value })} className="rounded-md border border-slate-300 px-3 py-2 text-sm">
+            <option value="">Project</option>
+            {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+          </select>
           <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
           <select value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className="rounded-md border border-slate-300 px-3 py-2 text-sm">
             <option value="">Assigned To</option>
@@ -293,8 +321,8 @@ export function Tasks() {
       </Modal>
 
       <Modal isOpen={!!viewComment} onClose={() => setViewComment(null)} title="Task Comment" size="lg"><p className="whitespace-pre-wrap text-sm text-slate-700">{viewComment?.comments}</p></Modal>
-      <Modal isOpen={!!previewRef} onClose={() => setPreviewRef(null)} title="Reference Preview" size="xl">
-        {previewRef?.referenceLink?.kind === 'url' ? <a className="text-sm font-medium text-slate-900 underline" href={previewRef.referenceLink.url} target="_blank" rel="noreferrer">Open URL</a> : previewRef?.referenceLink?.file ? <ReferenceFilePreview file={previewRef.referenceLink.file} /> : null}
+       <Modal isOpen={!!previewRef} onClose={() => setPreviewRef(null)} title="Reference Preview" size="xl">
+         {previewRef?.referenceLink?.kind === 'url' ? <a className="text-sm font-medium text-slate-900 underline" href={previewRef.referenceLink.url} target="_blank" rel="noreferrer">Open URL</a> : previewRef?.referenceDocument ? <ReferenceFilePreview file={previewRef.referenceDocument} /> : null}
       </Modal>
       <ConfirmDialog isOpen={!!deleting} title="Delete Task?" message="Are you sure you want to delete this task?" onConfirm={deleteTask} onCancel={() => setDeleting(null)} />
     </Layout>

@@ -7,7 +7,11 @@ const OTP_RESEND_SECONDS = 30;
 
 function stripPassword(user: (typeof mockUsers)[0]): AuthUser {
   const { password: _, ...authUser } = user;
-  return authUser;
+  return {
+    ...authUser,
+    userType: authUser.role === 'Administrator' ? 'Administrator' : 'User',
+    permissions: [],
+  };
 }
 
 export const authService = {
@@ -96,11 +100,17 @@ export const authService = {
   getStoredUser(): AuthUser | null {
     const raw = localStorage.getItem(AUTH_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const user = JSON.parse(raw) as AuthUser;
+    return {
+      ...user,
+      userType: user.userType ?? (user.role === 'Administrator' ? 'Administrator' : 'User'),
+      permissions: user.permissions ?? [],
+    };
   },
 
   logout(): void {
     localStorage.removeItem(AUTH_KEY);
+    localStorage.removeItem('pw_access_token');
     sessionStorage.removeItem(PENDING_AUTH_KEY);
   },
 

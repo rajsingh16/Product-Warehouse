@@ -6,6 +6,8 @@ export interface AuthUser {
   email: string;
   employeeId: string;
   whatsappLastDigits: string;
+  userType?: 'Administrator' | 'User';
+  permissions?: RoleId[];
 }
 
 export interface MockUser extends AuthUser {
@@ -39,13 +41,16 @@ export interface Folder {
   id: string;
   name: string;
   files: ProjectFile[];
+  folders?: Folder[];
 }
 
 export interface Project {
   id: string;
   name: string;
   assignedEmployeeIds: string[];
+  assignedEmployeeNames?: string[];
   createdAt: string;
+  status?: string;
   folders: Folder[];
 }
 
@@ -81,6 +86,7 @@ export interface TaskReference {
 export interface Task {
   id: string;
   taskId: string;
+  projectId?: string;
   description: string;
   assignedTo: {
     employeeId: string;
@@ -88,6 +94,7 @@ export interface Task {
   };
   assignedOn: string;
   referenceLink?: TaskReference;
+  referenceDocument?: ProjectFile;
   comments: string;
   status: TaskStatus;
 }

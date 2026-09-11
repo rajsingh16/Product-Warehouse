@@ -1,129 +1,21 @@
+import { apiRequest, queryString } from './apiClient';
 import { mockProjects } from '../data/mockData';
-import type { CreateProjectInput, Project, UpdateProjectInput } from '../types';
-
-const PROJECTS_KEY = 'pw_projects';
-
-function loadProjects(): Project[] {
-  const stored = localStorage.getItem(PROJECTS_KEY);
-  if (stored) {
-    return JSON.parse(stored);
-  }
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(mockProjects));
-  return structuredClone(mockProjects);
-}
-
-function saveProjects(projects: Project[]): void {
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
-}
-
-function generateId(): string {
-  return `proj-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-}
-
-function createDefaultFolders(projectId: string): Project['folders'] {
-  return ['Informative Data', 'Analysis Data', 'Analytics Data', 'Reports'].map((name) => ({
-    id: `${projectId}-folder-${name.toLowerCase().replace(/\s+/g, '-')}`,
-    name,
-    files: [],
-  }));
-}
-
+import type { CreateProjectInput, Project, UpdateProjectInput, Folder } from '../types';
+type ApiProject = { project_id: string; project_name: string; project_status: string; created_at: string; users: Array<{ userId: string; userName?: string; empId?: string }> };
+const FOLDERS_KEY = 'pw_project_folders';
+function defaultFolders(projectId: string): Folder[] { const existing = mockProjects.find((project) => project.id === projectId)?.folders; if (existing) return structuredClone(existing); return ['Informative Data', 'Analysis Data', 'Analytics Data', 'Reports'].map((name) => ({ id: `${projectId}-folder-${name.toLowerCase().replace(/\s+/g, '-')}`, name, files: [], folders: [] })); }
+function loadFolderStore(): Record<string, Folder[]> { try { return JSON.parse(localStorage.getItem(FOLDERS_KEY) ?? '{}') as Record<string, Folder[]>; } catch { return {}; } }
+function foldersFor(projectId: string): Folder[] { const store = loadFolderStore(); if (store[projectId]) return store[projectId]; const folders = defaultFolders(projectId); store[projectId] = folders; localStorage.setItem(FOLDERS_KEY, JSON.stringify(store)); return folders; }
+function mapProject(project: ApiProject): Project { return { id: project.project_id, name: project.project_name, status: project.project_status, createdAt: project.created_at, assignedEmployeeIds: project.users?.map((user) => user.userId) ?? [], assignedEmployeeNames: project.users?.map((user) => user.userName ?? user.empId ?? user.userId) ?? [], folders: foldersFor(project.project_id) }; }
+async function assignUsers(projectId: string, userIds: string[]) { await Promise.all(userIds.map((userId) => apiRequest(`/api/projects/${encodeURIComponent(projectId)}/users`, { method: 'POST', body: JSON.stringify({ userId }) }))); }
 export const projectService = {
-  async getProjects(): Promise<Project[]> {
-    await delay(200);
-    return loadProjects();
-  },
-
-  async getProject(id: string): Promise<Project | null> {
-    await delay(150);
-    const projects = loadProjects();
-    return projects.find((p) => p.id === id) ?? null;
-  },
-
-  async searchProjects(query: string): Promise<Project[]> {
-    await delay(100);
-    const projects = loadProjects();
-    const q = query.trim().toLowerCase();
-    if (!q) return projects;
-    return projects.filter((p) => p.name.toLowerCase().includes(q));
-  },
-
-  async createProject(input: CreateProjectInput): Promise<Project> {
-    await delay(300);
-
-    if (!input.name.trim()) {
-      throw new Error('Project name is required.');
-    }
-
-    const projects = loadProjects();
-    const id = generateId();
-    const project: Project = {
-      id,
-      name: input.name.trim(),
-      assignedEmployeeIds: input.assignedEmployeeIds,
-      createdAt: new Date().toISOString().split('T')[0],
-      folders: createDefaultFolders(id),
-    };
-
-    projects.unshift(project);
-    saveProjects(projects);
-    return project;
-  },
-
-  async updateProject(id: string, input: UpdateProjectInput): Promise<Project> {
-    await delay(300);
-
-    const projects = loadProjects();
-    const index = projects.findIndex((p) => p.id === id);
-    if (index === -1) throw new Error('Project not found.');
-
-    if (input.name !== undefined && !input.name.trim()) {
-      throw new Error('Project name is required.');
-    }
-
-    const updated: Project = {
-      ...projects[index],
-      ...(input.name !== undefined && { name: input.name.trim() }),
-      ...(input.assignedEmployeeIds !== undefined && { assignedEmployeeIds: input.assignedEmployeeIds }),
-    };
-
-    projects[index] = updated;
-    saveProjects(projects);
-    return updated;
-  },
-
-  async deleteProject(id: string): Promise<void> {
-    await delay(300);
-    const projects = loadProjects();
-    const filtered = projects.filter((p) => p.id !== id);
-    if (filtered.length === projects.length) {
-      throw new Error('Project not found.');
-    }
-    saveProjects(filtered);
-  },
-
-  async saveProject(project: Project): Promise<Project> {
-    await delay(100);
-    const projects = loadProjects();
-    const index = projects.findIndex((p) => p.id === project.id);
-    if (index === -1) throw new Error('Project not found.');
-    projects[index] = project;
-    saveProjects(projects);
-    return project;
-  },
-
-  getTotalFileCount(): number {
-    const projects = loadProjects();
-    return projects.reduce(
-      (total, project) =>
-        total + project.folders.reduce((ft, folder) => ft + folder.files.length, 0),
-      0,
-    );
-  },
+  async getProjects() { return (await apiRequest<ApiProject[]>('/api/projects?page=1&pageSize=100')).map(mapProject); },
+  async getProject(id: string) { try { return mapProject(await apiRequest<ApiProject>(`/api/projects/${encodeURIComponent(id)}`)); } catch (error) { if (error instanceof Error && error.message === 'Project not found') return null; throw error; } },
+  async searchProjects(query: string) { return (await apiRequest<ApiProject[]>(`/api/projects${queryString({ search: query, page: 1, pageSize: 25 })}`)).map(mapProject); },
+  async createProject(input: CreateProjectInput) { const id = `proj-${Date.now()}`; const created = await apiRequest<ApiProject>('/api/projects', { method: 'POST', body: JSON.stringify({ projectId: id, projectName: input.name, projectStatus: 'Active' }) }); await assignUsers(id, input.assignedEmployeeIds); return mapProject({ ...created, users: input.assignedEmployeeIds.map((userId) => ({ userId })) }); },
+  async updateProject(id: string, input: UpdateProjectInput) { const current = await apiRequest<ApiProject>(`/api/projects/${encodeURIComponent(id)}`); const updated = await apiRequest<ApiProject>(`/api/projects/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify({ projectName: input.name ?? current.project_name, projectStatus: current.project_status }) }); const existing = current.users?.map((user) => user.userId) ?? []; const desired = input.assignedEmployeeIds ?? existing; await Promise.all(existing.filter((userId) => !desired.includes(userId)).map((userId) => apiRequest(`/api/projects/${id}/users/${encodeURIComponent(userId)}`, { method: 'DELETE' }))); await assignUsers(id, desired.filter((userId) => !existing.includes(userId))); return mapProject({ ...updated, users: desired.map((userId) => ({ userId })) }); },
+  async deleteProject(id: string) { await apiRequest(`/api/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }); },
+  async saveProject(project: Project): Promise<Project> { const store = loadFolderStore(); store[project.id] = project.folders; localStorage.setItem(FOLDERS_KEY, JSON.stringify(store)); return project; },
+  getTotalFileCount() { return Object.values(loadFolderStore()).flat().reduce((total, folder) => total + countFiles(folder), 0); },
 };
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// Future: GET/POST/PUT/DELETE /api/projects
+function countFiles(folder: Folder): number { return folder.files.length + (folder.folders ?? []).reduce((total, child) => total + countFiles(child), 0); }

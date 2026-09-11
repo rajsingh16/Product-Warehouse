@@ -47,7 +47,7 @@ export function EmployeeDetails() {
     );
   }
 
-  const assignedProjects = projects.filter((p) => employee.projectIds.includes(p.id));
+  const assignedProjects = projects.filter((p) => p.assignedEmployeeIds.includes(employee.id) || p.assignedEmployeeIds.includes(employee.employeeId));
   const initials = employee.name
     .split(' ')
     .map((n) => n[0])

@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { Modal } from '../components/common/Modal';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Layout } from '../components/layout/Layout';
+import { Pagination } from '../components/common/Pagination';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { formatDate } from '../data/mockData';
@@ -42,8 +43,14 @@ export function Employees() {
   const [deleting, setDeleting] = useState<Employee | null>(null);
   const [form, setForm] = useState<EmployeeFormState>(emptyForm);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const loadEmployees = async () => setEmployees(await employeeService.getEmployees());
+  const loadEmployees = async () => {
+    try { setLoadError(''); setEmployees(await employeeService.getEmployees()); }
+    catch (err) { setLoadError(err instanceof Error ? err.message : 'Failed to load employees.'); }
+  };
 
   useEffect(() => {
     loadEmployees();
@@ -66,6 +73,9 @@ export function Employees() {
       return matchesQuery && matchesFilters;
     });
   }, [employees, filters, query]);
+
+  useEffect(() => { setPage(1); }, [query, filters]);
+  const paginatedEmployees = visibleEmployees.slice((page - 1) * pageSize, page * pageSize);
 
   const openCreate = () => {
     setEditing(null);
@@ -163,6 +173,7 @@ export function Employees() {
         </div>
       </div>
 
+      {loadError && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{loadError}</div>}
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-left text-sm">
@@ -174,7 +185,7 @@ export function Employees() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {visibleEmployees.map((employee) => (
+              {paginatedEmployees.map((employee) => (
                 <tr key={employee.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
@@ -195,6 +206,7 @@ export function Employees() {
         </div>
       </div>
 
+      <Pagination page={page} pageSize={pageSize} total={visibleEmployees.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Employee' : 'New Employee'} size="lg">
         <form onSubmit={saveEmployee} className="grid gap-4 sm:grid-cols-2">
           <input value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} placeholder="Employee ID" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />

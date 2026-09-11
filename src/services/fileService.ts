@@ -1,5 +1,5 @@
 import { SUPPORTED_EXTENSIONS } from '../types';
-import type { ProjectFile } from '../types';
+import type { Folder, ProjectFile } from '../types';
 import { projectService } from './projectService';
 
 async function loadAndUpdate(
@@ -9,7 +9,7 @@ async function loadAndUpdate(
 ): Promise<ProjectFile[]> {
   const project = await projectService.getProject(projectId);
   if (!project) throw new Error('Project not found.');
-  const folder = project.folders.find((f) => f.id === folderId);
+  const folder = findFolder(project.folders, folderId);
   if (!folder) throw new Error('Folder not found.');
 
   folder.files = updater(folder.files);
@@ -83,7 +83,7 @@ export const fileService = {
   async getFiles(projectId: string, folderId: string): Promise<ProjectFile[]> {
     await delay(150);
     const project = await projectService.getProject(projectId);
-    const folder = project?.folders.find((f) => f.id === folderId);
+    const folder = project ? findFolder(project.folders, folderId) : undefined;
     return folder?.files ?? [];
   },
 
@@ -175,4 +175,11 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Future: GET/POST/DELETE /api/projects/:projectId/folders/:folderId/files
+function findFolder(folders: Folder[], id: string): Folder | undefined {
+  for (const folder of folders) {
+    if (folder.id === id) return folder;
+    const nested = findFolder(folder.folders ?? [], id);
+    if (nested) return nested;
+  }
+  return undefined;
+}
