@@ -43,7 +43,7 @@ export function ProjectTable({ projects, onEdit, onDelete }: ProjectTableProps) 
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-slate-600">
-                  {getEmployeeNames(project.assignedEmployeeIds)}
+                  {project.assignedEmployeeNames?.join(', ') || getEmployeeNames(project.assignedEmployeeIds)}
                 </td>
                 <td className="px-4 py-3 text-slate-600">{formatDate(project.createdAt)}</td>
                 <td className="px-4 py-3">

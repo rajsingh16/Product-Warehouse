@@ -53,7 +53,7 @@ export function ProjectDetails() {
         <h1 className="text-2xl font-semibold text-slate-900">{project.name}</h1>
         <p className="mt-2 text-sm text-slate-600">
           <span className="font-medium">Assigned To:</span>{' '}
-          {getEmployeeNames(project.assignedEmployeeIds)}
+          {project.assignedEmployeeNames?.join(', ') || getEmployeeNames(project.assignedEmployeeIds)}
         </p>
       </div>
 

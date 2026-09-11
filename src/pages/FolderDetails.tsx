@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Folder as FolderIcon, Plus } from 'lucide-react';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { FilePreview } from '../components/files/FilePreview';
 import { FileTable } from '../components/files/FileTable';
@@ -9,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { fileService } from '../services/fileService';
 import { projectService } from '../services/projectService';
-import type { Project, ProjectFile } from '../types';
+import type { Folder, Project, ProjectFile } from '../types';
 
 export function FolderDetails() {
   const { projectId, folderId } = useParams<{ projectId: string; folderId: string }>();
@@ -37,7 +38,23 @@ export function FolderDetails() {
     loadData();
   }, [loadData]);
 
-  const folder = project?.folders.find((f) => f.id === folderId);
+  const findFolder = (folders: Folder[]): Folder | undefined => {
+    for (const item of folders) { if (item.id === folderId) return item; const nested = findFolder(item.folders ?? []); if (nested) return nested; }
+    return undefined;
+  };
+  const folder = project ? findFolder(project.folders) : undefined;
+
+  const handleCreateFolder = async () => {
+    if (!project || !folder) return;
+    const name = window.prompt('Folder name');
+    if (!name?.trim()) return;
+    const children = folder.folders ?? [];
+    if (children.some((child) => child.name.toLowerCase() === name.trim().toLowerCase())) { showToast('A folder with that name already exists.', 'error'); return; }
+    folder.folders = [...children, { id: `${folder.id}-folder-${Date.now()}`, name: name.trim(), files: [], folders: [] }];
+    await projectService.saveProject(project);
+    setProject({ ...project, folders: [...project.folders] });
+    showToast('Folder created successfully.');
+  };
 
   const handleUpload = async (uploadFiles: File[]) => {
     if (!projectId || !folderId || !user) return;
@@ -99,6 +116,11 @@ export function FolderDetails() {
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-slate-900">Folder {folder.name}</h1>
         <p className="mt-1 text-sm text-slate-600">{project.name}</p>
+      </div>
+
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <button type="button" onClick={handleCreateFolder} className="inline-flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"><Plus className="h-4 w-4" /> New Folder</button>
+        {(folder.folders ?? []).map((child) => <Link key={child.id} to={`/projects/${project.id}/${child.id}`} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-slate-400"><FolderIcon className="h-4 w-4 text-slate-500" />{child.name}</Link>)}
       </div>
 
       <div className="mb-6">

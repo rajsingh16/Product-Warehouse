@@ -13,7 +13,7 @@ interface LayoutProps {
 
 export function Layout({ breadcrumbs = [], title, children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const pageTitle = title ?? breadcrumbs.at(-1)?.label ?? 'Dashboard Overview';
+  const pageTitle = title ?? breadcrumbs[breadcrumbs.length - 1]?.label ?? 'Dashboard Overview';
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">

@@ -8,6 +8,7 @@ import { Layout } from '../components/layout/Layout';
 import { ProjectForm } from '../components/projects/ProjectForm';
 import { ProjectSearch } from '../components/projects/ProjectSearch';
 import { ProjectTable } from '../components/projects/ProjectTable';
+import { Pagination } from '../components/common/Pagination';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { projectService } from '../services/projectService';
@@ -25,17 +26,22 @@ export function Projects() {
   const [editProject, setEditProject] = useState<Project | null>(null);
   const [deleteProject, setDeleteProject] = useState<Project | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const loadProjects = async () => {
     setLoading(true);
-    const data = await projectService.getProjects();
-    setProjects(data);
-    setLoading(false);
+    try { setLoadError(''); setProjects(await projectService.getProjects()); }
+    catch (err) { setLoadError(err instanceof Error ? err.message : 'Failed to load projects.'); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => {
     loadProjects();
   }, []);
+
+  const visibleProjects = projects.slice((page - 1) * pageSize, page * pageSize);
 
   const handleCreate = async (data: { name: string; assignedEmployeeIds: string[] }) => {
     const project = await projectService.createProject(data);
@@ -90,12 +96,10 @@ export function Projects() {
         <div className="flex items-center justify-center py-20">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" />
         </div>
+      ) : loadError ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">{loadError}</div>
       ) : (
-        <ProjectTable
-          projects={projects}
-          onEdit={setEditProject}
-          onDelete={setDeleteProject}
-        />
+        <><ProjectTable projects={visibleProjects} onEdit={setEditProject} onDelete={setDeleteProject} /><Pagination page={page} pageSize={pageSize} total={projects.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} /></>
       )}
 
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="New Project" size="lg">

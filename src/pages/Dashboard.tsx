@@ -1,27 +1,27 @@
 import { FileText, FolderKanban, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { formatDate, getEmployeeNames, mockEmployees } from '../data/mockData';
+import { formatDate } from '../data/mockData';
 import { Layout } from '../components/layout/Layout';
 import { projectService } from '../services/projectService';
+import { employeeService } from '../services/employeeService';
 import type { Project } from '../types';
 
 export function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalFiles, setTotalFiles] = useState(0);
+  const [totalEmployees, setTotalEmployees] = useState(0);
 
   useEffect(() => {
-    projectService.getProjects().then((data) => {
-      setProjects(data);
-      setTotalFiles(projectService.getTotalFileCount());
-      setLoading(false);
+    Promise.all([projectService.getProjects(), employeeService.getEmployees()]).then(([data, employees]) => {
+      setProjects(data); setTotalEmployees(employees.length); setTotalFiles(projectService.getTotalFileCount()); setLoading(false);
     });
   }, []);
 
   const stats = [
     { label: 'Total Projects', value: projects.length, icon: FolderKanban },
-    { label: 'Total Employees', value: mockEmployees.length, icon: Users },
+    { label: 'Total Employees', value: totalEmployees, icon: Users },
     { label: 'Total Files', value: totalFiles, icon: FileText },
   ];
 
@@ -87,7 +87,7 @@ export function Dashboard() {
                           </Link>
                         </td>
                         <td className="px-5 py-3 text-slate-600">
-                          {getEmployeeNames(project.assignedEmployeeIds)}
+                          {project.assignedEmployeeNames?.join(', ') ?? ''}
                         </td>
                         <td className="px-5 py-3 text-slate-600">{formatDate(project.createdAt)}</td>
                       </tr>

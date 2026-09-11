@@ -1,7 +1,9 @@
-import { ChevronDown, FolderKanban, LayoutDashboard, ShieldCheck, UserRoundCheck, Users, X } from 'lucide-react';
+import { ChevronDown, FolderKanban, LayoutDashboard, ShieldCheck, UserRoundCheck, Users, X, Wrench } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import logoIcon from '../../assets/logo-icon.svg';
+import { useAuth } from '../../context/AuthContext';
+import { hasPermission } from '../../utils/authorization';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -10,7 +12,9 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
+  const { user } = useAuth();
   const [employeesOpen, setEmployeesOpen] = useState(location.pathname.startsWith('/employees'));
+  const [masterOpen, setMasterOpen] = useState(location.pathname.startsWith('/master') || location.pathname.startsWith('/user-role'));
   const navClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
       isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -48,11 +52,20 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
           </NavLink>
-          <NavLink to="/projects" onClick={onClose} className={navClass}>
+          {((user?.userType === 'Administrator' || user?.role === 'Administrator') || hasPermission(user, 'user_view')) && <>
+            <button type="button" onClick={() => setMasterOpen((open) => !open)} className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+              <span className="flex items-center gap-3"><Wrench className="h-4 w-4" />Master</span><ChevronDown className={`h-4 w-4 transition-transform ${masterOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {masterOpen && <div className="ml-7 space-y-1 border-l border-slate-200 pl-3">
+              {hasPermission(user, 'user_view') && <NavLink to="/user-role" onClick={onClose} className={navClass}><ShieldCheck className="h-4 w-4" />User Role</NavLink>}
+              {(user?.userType === 'Administrator' || user?.role === 'Administrator') && <NavLink to="/master/task-master" onClick={onClose} className={navClass}><Wrench className="h-4 w-4" />Task Master</NavLink>}
+            </div>}
+          </>}
+          {hasPermission(user, 'project_view') && <NavLink to="/projects" onClick={onClose} className={navClass}>
             <FolderKanban className="h-4 w-4" />
             Projects
-          </NavLink>
-          <button
+          </NavLink>}
+          {(hasPermission(user, 'employee_view') || hasPermission(user, 'task_view')) && <button
             type="button"
             onClick={() => setEmployeesOpen((open) => !open)}
             className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors ${
@@ -66,23 +79,19 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               Employees
             </span>
             <ChevronDown className={`h-4 w-4 transition-transform ${employeesOpen ? 'rotate-180' : ''}`} />
-          </button>
+          </button>}
           {employeesOpen && (
             <div className="ml-7 space-y-1 border-l border-slate-200 pl-3">
-              <NavLink to="/employees" onClick={onClose} end className={navClass}>
+              {hasPermission(user, 'employee_view') && <NavLink to="/employees" onClick={onClose} end className={navClass}>
                 <UserRoundCheck className="h-4 w-4" />
                 Employee List
-              </NavLink>
-              <NavLink to="/employees/tasks" onClick={onClose} className={navClass}>
+              </NavLink>}
+              {hasPermission(user, 'task_view') && <NavLink to="/employees/tasks" onClick={onClose} className={navClass}>
                 <FolderKanban className="h-4 w-4" />
                 Task
-              </NavLink>
+              </NavLink>}
             </div>
           )}
-          <NavLink to="/user-role" onClick={onClose} className={navClass}>
-            <ShieldCheck className="h-4 w-4" />
-            User Role
-          </NavLink>
         </nav>
       </aside>
     </>

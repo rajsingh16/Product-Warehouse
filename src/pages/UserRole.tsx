@@ -4,6 +4,7 @@ import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Layout } from '../components/layout/Layout';
+import { Pagination } from '../components/common/Pagination';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { employeeService } from '../services/employeeService';
@@ -64,6 +65,8 @@ export function UserRole() {
   const [editing, setEditing] = useState<UserRoleAssignment | null>(null);
   const [form, setForm] = useState<RoleFormState>({ employeeId: '', roles: [], status: 'active' });
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const loadData = async () => {
     const [roleData, employeeData] = await Promise.all([roleService.getAssignments(), employeeService.getEmployees()]);
@@ -85,6 +88,9 @@ export function UserRole() {
       return matchesQuery && matchesFilters;
     });
   }, [assignments, filters, query]);
+
+  useEffect(() => { setPage(1); }, [query, filters]);
+  const paginatedAssignments = visibleAssignments.slice((page - 1) * pageSize, page * pageSize);
 
   const openAssign = () => {
     setEditing(null);
@@ -173,7 +179,7 @@ export function UserRole() {
               <tr>{['Actions', 'Employee ID', 'Employee Name', 'Role', 'Status'].map((column) => <th key={column} className="px-4 py-3 font-medium text-slate-600">{column}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {visibleAssignments.map((assignment) => (
+              {paginatedAssignments.map((assignment) => (
                 <tr key={assignment.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3">{can(user, 'roles:assign') && <Button variant="ghost" size="sm" onClick={() => openEdit(assignment)}><Pencil className="h-4 w-4" />Edit</Button>}</td>
                   <td className="px-4 py-3 text-slate-600">{assignment.employeeId}</td>
@@ -187,6 +193,7 @@ export function UserRole() {
         </div>
       </div>
 
+      <Pagination page={page} pageSize={pageSize} total={visibleAssignments.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Roles' : 'Assign Roles'} size="lg">
         <form onSubmit={saveRole} className="space-y-4">
           <select value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">

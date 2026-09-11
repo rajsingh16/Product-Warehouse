@@ -1,94 +1,26 @@
-import { mockRoleAssignments, roleDefinitions } from '../data/mockData';
-import type { RoleId, UserRoleAssignment } from '../types';
+import { apiRequest, queryString } from './apiClient';
+import type { RoleDefinition, RoleId, UserRoleAssignment } from '../types';
 
-const ROLES_KEY = 'pw_role_assignments';
-
-export const availableRoles = roleDefinitions;
-export const availableRoleIds = roleDefinitions.map((role) => role.id);
-
-const legacyRoleMap: Record<string, RoleId[]> = {
-  Administrator: availableRoleIds,
-  Manager: ['project_view', 'project_create', 'employee_view', 'employee_create', 'task_view', 'task_create', 'task_edit', 'task_delete'],
-  'Project Manager': ['project_view', 'task_view', 'task_create', 'task_edit', 'task_delete'],
-  Employee: ['task_view', 'task_edit'],
-  Viewer: ['project_view', 'employee_view', 'task_view'],
-};
-
-export function dedupeRoles(roles: RoleId[]): RoleId[] {
-  return [...new Set(roles)].filter((role): role is RoleId => availableRoleIds.includes(role));
-}
-
-function normalizeAssignment(assignment: UserRoleAssignment | (Omit<UserRoleAssignment, 'roles'> & { role?: string })): UserRoleAssignment {
-  const roles = 'roles' in assignment && Array.isArray(assignment.roles)
-    ? assignment.roles
-    : legacyRoleMap[assignment.role ?? ''] ?? [];
-
-  return {
-    id: assignment.id,
-    employeeId: assignment.employeeId,
-    employeeName: assignment.employeeName,
-    roles: dedupeRoles(roles),
-    status: assignment.status,
-  };
-}
-
-function loadAssignments(): UserRoleAssignment[] {
-  const stored = localStorage.getItem(ROLES_KEY);
-  if (stored) {
-    const assignments = (JSON.parse(stored) as Array<UserRoleAssignment | (Omit<UserRoleAssignment, 'roles'> & { role?: string })>).map(normalizeAssignment);
-    saveAssignments(assignments);
-    return assignments;
-  }
-  localStorage.setItem(ROLES_KEY, JSON.stringify(mockRoleAssignments));
-  return structuredClone(mockRoleAssignments);
-}
-
-function saveAssignments(assignments: UserRoleAssignment[]): void {
-  localStorage.setItem(ROLES_KEY, JSON.stringify(assignments));
-}
-
-function generateId(): string {
-  return `role-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-}
+export const availableRoles: RoleDefinition[] = [
+  { id: 'project_view', label: 'Project View', group: 'Project' }, { id: 'project_create', label: 'Project Create', group: 'Project' },
+  { id: 'employee_view', label: 'Employee View', group: 'Employee' }, { id: 'employee_create', label: 'Employee Create', group: 'Employee' },
+  { id: 'user_view', label: 'User View', group: 'User' }, { id: 'user_create', label: 'User Create', group: 'User' }, { id: 'user_assign', label: 'User Assign', group: 'User' },
+  { id: 'task_view', label: 'Task View', group: 'Task' }, { id: 'task_create', label: 'Task Create', group: 'Task' }, { id: 'task_edit', label: 'Task Edit', group: 'Task' }, { id: 'task_delete', label: 'Task Delete', group: 'Task' },
+];
+export const availableRoleIds = availableRoles.map((role) => role.id);
+export function dedupeRoles(roles: RoleId[]) { return [...new Set(roles)].filter((role): role is RoleId => availableRoleIds.includes(role)); }
 
 export const roleService = {
-  async getAssignments(): Promise<UserRoleAssignment[]> {
-    await delay(150);
-    return loadAssignments();
+  async getAssignments() {
+    const users = await apiRequest<Array<{ user_id: string; emp_id: string; user_name: string; permissions: RoleId[] }>>('/api/users?page=1&pageSize=100');
+    return users.map((user): UserRoleAssignment => ({ id: user.user_id, employeeId: user.emp_id, employeeName: user.user_name, roles: dedupeRoles(user.permissions ?? []), status: 'active' }));
   },
-
-  async assignRole(input: Omit<UserRoleAssignment, 'id'>): Promise<UserRoleAssignment> {
-    await delay(200);
-    const assignments = loadAssignments();
-    const existingIndex = assignments.findIndex((assignment) => assignment.employeeId === input.employeeId);
-    const assignment: UserRoleAssignment = {
-      ...input,
-      roles: dedupeRoles(input.roles),
-      id: existingIndex >= 0 ? assignments[existingIndex].id : generateId(),
-    };
-    if (existingIndex >= 0) {
-      assignments[existingIndex] = assignment;
-    } else {
-      assignments.unshift(assignment);
-    }
-    saveAssignments(assignments);
-    return assignment;
+  async assignRole(input: Omit<UserRoleAssignment, 'id'>) {
+    const users = await apiRequest<Array<{ user_id: string }>>(`/api/users${queryString({ search: input.employeeId, page: 1, pageSize: 1 })}`);
+    const user = users[0];
+    if (!user) throw new Error('User not found');
+    await apiRequest(`/api/users/${encodeURIComponent(user.user_id)}/permissions`, { method: 'PUT', body: JSON.stringify({ permissions: input.roles }) });
+    return { ...input, id: user.user_id };
   },
-
-  async updateAssignment(id: string, input: Omit<UserRoleAssignment, 'id'>): Promise<UserRoleAssignment> {
-    await delay(200);
-    const assignments = loadAssignments();
-    const index = assignments.findIndex((assignment) => assignment.id === id);
-    if (index === -1) throw new Error('Role assignment not found.');
-    const updated = { ...input, roles: dedupeRoles(input.roles), id };
-    assignments[index] = updated;
-    saveAssignments(assignments);
-    return updated;
-  },
+  async updateAssignment(id: string, input: Omit<UserRoleAssignment, 'id'>) { await apiRequest(`/api/users/${encodeURIComponent(id)}/permissions`, { method: 'PUT', body: JSON.stringify({ permissions: input.roles }) }); return { ...input, id }; },
 };
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// Future: GET/POST/PUT /api/user-roles

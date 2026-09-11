@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { mockEmployees } from '../../data/mockData';
+import { employeeService } from '../../services/employeeService';
 import type { Project } from '../../types';
 import { Button } from '../common/Button';
 
@@ -21,12 +21,18 @@ export function ProjectForm({
   const [assignAll, setAssignAll] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [employees, setEmployees] = useState<Array<{ id: string; name: string }>>([]);
+  const [employeesLoading, setEmployeesLoading] = useState(true);
+
+  useEffect(() => {
+    employeeService.getEmployees().then(setEmployees).finally(() => setEmployeesLoading(false));
+  }, []);
 
   useEffect(() => {
     if (assignAll) {
-      setSelectedIds(mockEmployees.map((e) => e.id));
+      setSelectedIds(employees.map((e) => e.id));
     }
-  }, [assignAll]);
+  }, [assignAll, employees]);
 
   const toggleEmployee = (id: string) => {
     setAssignAll(false);
@@ -73,7 +79,7 @@ export function ProjectForm({
       <div>
         <p className="mb-2 text-sm font-medium text-slate-700">Assign Employees</p>
         <div className="space-y-2 rounded-md border border-slate-200 p-4">
-          {mockEmployees.map((employee) => (
+          {employeesLoading ? <p className="text-sm text-slate-500">Loading employees...</p> : employees.map((employee) => (
             <label key={employee.id} className="flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"
