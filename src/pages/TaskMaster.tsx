@@ -42,7 +42,7 @@ export function TaskMaster() {
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      if (!form.taskId.trim() || !form.taskName.trim()) throw new Error('Task ID and Task Name are required.');
+      if (!form.taskName.trim()) throw new Error('Task Name is required.');
       if (editing) await taskMasterService.update(editing.taskId, { taskName: form.taskName.trim(), status: form.status });
       else await taskMasterService.create({ taskId: form.taskId.trim(), taskName: form.taskName.trim(), status: form.status });
       showToast(editing ? 'Task Master record updated successfully.' : 'Task Master record created successfully.');
@@ -74,7 +74,7 @@ export function TaskMaster() {
         </div>
       )}
       <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={editing ? 'Edit Task Master' : 'Add New Task'}>
-        <form onSubmit={save} className="space-y-4"><input disabled={!!editing} value={form.taskId} onChange={(event) => setForm({ ...form, taskId: event.target.value })} placeholder="Task ID" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /><input value={form.taskName} onChange={(event) => setForm({ ...form, taskName: event.target.value })} placeholder="Task Name" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /><select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="Active">Active</option><option value="Inactive">Inactive</option></select><div className="flex gap-3"><Button type="submit">{editing ? 'Save Changes' : 'Add Task'}</Button><Button type="button" variant="secondary" onClick={() => setFormOpen(false)}>Cancel</Button></div></form>
+        <form onSubmit={save} className="space-y-4">{editing && <input disabled value={form.taskId} placeholder="Task ID" className="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm" />}<input value={form.taskName} onChange={(event) => setForm({ ...form, taskName: event.target.value })} placeholder="Task Name" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /><select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="Active">Active</option><option value="Inactive">Inactive</option></select><div className="flex gap-3"><Button type="submit">{editing ? 'Save Changes' : 'Add Task'}</Button><Button type="button" variant="secondary" onClick={() => setFormOpen(false)}>Cancel</Button></div></form>
       </Modal>
       <ConfirmDialog isOpen={!!deleting} title="Delete Task Master Record?" message={deleting ? `Are you sure you want to delete "${deleting.taskId}"?` : ''} onConfirm={remove} onCancel={() => setDeleting(null)} />
     </Layout>

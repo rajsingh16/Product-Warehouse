@@ -1,126 +1,27 @@
-import { DEMO_OTP, mockUsers } from '../data/mockData';
+import { apiRequest } from './apiClient';
 import type { AuthUser, PendingAuth } from '../types';
 
 const AUTH_KEY = 'pw_auth';
+const TOKEN_KEY = 'pw_access_token';
 const PENDING_AUTH_KEY = 'pw_pending_auth';
-const OTP_RESEND_SECONDS = 30;
-
-function stripPassword(user: (typeof mockUsers)[0]): AuthUser {
-  const { password: _, ...authUser } = user;
-  return {
-    ...authUser,
-    userType: authUser.role === 'Administrator' ? 'Administrator' : 'User',
-    permissions: [],
-  };
-}
 
 export const authService = {
   async login(userId: string, password: string): Promise<{ success: true; pending: PendingAuth } | { success: false; error: string }> {
-    await delay(400);
-
-    const user = mockUsers.find((u) => u.userId === userId && u.password === password);
-    if (!user) {
-      return { success: false, error: 'Invalid User ID or Password.' };
-    }
-
-    const authUser = stripPassword(user);
-    const now = Date.now();
-    const pending: PendingAuth = {
-      user: authUser,
-      otp: DEMO_OTP,
-      expiresAt: now + 5 * 60 * 1000,
-      resendAvailableAt: now + OTP_RESEND_SECONDS * 1000,
-    };
-
-    sessionStorage.setItem(PENDING_AUTH_KEY, JSON.stringify(pending));
-    console.info('[ShanConnects] Demo OTP:', DEMO_OTP);
-
-    return { success: true, pending };
+    try { const pending = await apiRequest<PendingAuth>('/api/auth/login', { method: 'POST', body: JSON.stringify({ userId, password }) }); sessionStorage.setItem(PENDING_AUTH_KEY, JSON.stringify(pending)); return { success: true, pending }; }
+    catch (error) { return { success: false, error: error instanceof Error ? error.message : 'Unable to login.' }; }
   },
-
   async verifyOTP(otp: string): Promise<{ success: true; user: AuthUser } | { success: false; error: string }> {
-    await delay(300);
-
-    const raw = sessionStorage.getItem(PENDING_AUTH_KEY);
-    if (!raw) {
-      return { success: false, error: 'Session expired. Please login again.' };
-    }
-
-    const pending: PendingAuth = JSON.parse(raw);
-
-    if (Date.now() > pending.expiresAt) {
-      sessionStorage.removeItem(PENDING_AUTH_KEY);
-      return { success: false, error: 'OTP expired. Please login again.' };
-    }
-
-    if (otp.trim() !== pending.otp) {
-      return { success: false, error: 'Invalid OTP. Please try again.' };
-    }
-
-    sessionStorage.removeItem(PENDING_AUTH_KEY);
-    localStorage.setItem(AUTH_KEY, JSON.stringify(pending.user));
-
-    return { success: true, user: pending.user };
+    const pending = this.getPendingAuth(); if (!pending) return { success: false, error: 'Session expired. Please login again.' };
+    try { const result = await apiRequest<{ token: string; user: AuthUser }>('/api/auth/verify-otp', { method: 'POST', body: JSON.stringify({ challengeId: pending.challengeId, otp }) }); localStorage.setItem(AUTH_KEY, JSON.stringify(result.user)); localStorage.setItem(TOKEN_KEY, result.token); sessionStorage.removeItem(PENDING_AUTH_KEY); return { success: true, user: result.user }; }
+    catch (error) { return { success: false, error: error instanceof Error ? error.message : 'Invalid verification code.' }; }
   },
-
   async resendOTP(): Promise<{ success: true; pending: PendingAuth } | { success: false; error: string }> {
-    await delay(300);
-
-    const raw = sessionStorage.getItem(PENDING_AUTH_KEY);
-    if (!raw) {
-      return { success: false, error: 'Session expired. Please login again.' };
-    }
-
-    const existing: PendingAuth = JSON.parse(raw);
-    const now = Date.now();
-
-    if (now < existing.resendAvailableAt) {
-      return { success: false, error: 'Please wait before requesting a new OTP.' };
-    }
-
-    const pending: PendingAuth = {
-      ...existing,
-      otp: DEMO_OTP,
-      expiresAt: now + 5 * 60 * 1000,
-      resendAvailableAt: now + OTP_RESEND_SECONDS * 1000,
-    };
-
-    sessionStorage.setItem(PENDING_AUTH_KEY, JSON.stringify(pending));
-    console.info('[ShanConnects] Demo OTP (resent):', DEMO_OTP);
-
-    return { success: true, pending };
+    const pending = this.getPendingAuth(); if (!pending) return { success: false, error: 'Session expired. Please login again.' };
+    try { const next = await apiRequest<PendingAuth>('/api/auth/resend-otp', { method: 'POST', body: JSON.stringify({ challengeId: pending.challengeId }) }); sessionStorage.setItem(PENDING_AUTH_KEY, JSON.stringify(next)); return { success: true, pending: next }; }
+    catch (error) { return { success: false, error: error instanceof Error ? error.message : 'Failed to resend OTP.' }; }
   },
-
-  getPendingAuth(): PendingAuth | null {
-    const raw = sessionStorage.getItem(PENDING_AUTH_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  },
-
-  getStoredUser(): AuthUser | null {
-    const raw = localStorage.getItem(AUTH_KEY);
-    if (!raw) return null;
-    const user = JSON.parse(raw) as AuthUser;
-    return {
-      ...user,
-      userType: user.userType ?? (user.role === 'Administrator' ? 'Administrator' : 'User'),
-      permissions: user.permissions ?? [],
-    };
-  },
-
-  logout(): void {
-    localStorage.removeItem(AUTH_KEY);
-    localStorage.removeItem('pw_access_token');
-    sessionStorage.removeItem(PENDING_AUTH_KEY);
-  },
-
-  isAuthenticated(): boolean {
-    return !!this.getStoredUser();
-  },
+  getPendingAuth(): PendingAuth | null { const raw = sessionStorage.getItem(PENDING_AUTH_KEY); if (!raw) return null; try { return JSON.parse(raw) as PendingAuth; } catch { return null; } },
+  getStoredUser(): AuthUser | null { const raw = localStorage.getItem(AUTH_KEY); if (!raw) return null; try { return JSON.parse(raw) as AuthUser; } catch { return null; } },
+  logout(): void { localStorage.removeItem(AUTH_KEY); localStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(PENDING_AUTH_KEY); },
+  isAuthenticated(): boolean { return !!this.getStoredUser(); },
 };
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// Future: POST /api/auth/login, POST /api/auth/verify-otp, POST /api/auth/resend-otp

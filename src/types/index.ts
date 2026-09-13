@@ -87,6 +87,7 @@ export interface Task {
   id: string;
   taskId: string;
   projectId?: string;
+  projectName?: string;
   description: string;
   assignedTo: {
     employeeId: string;
@@ -108,8 +109,8 @@ export interface UserRoleAssignment {
 }
 
 export interface PendingAuth {
-  user: AuthUser;
-  otp: string;
+  challengeId: string;
+  maskedPhone: string;
   expiresAt: number;
   resendAvailableAt: number;
 }

@@ -144,7 +144,7 @@ export const taskMasterRepository = {
     const values = [];
     const filters = [];
     if (search) { values.push(`%${search}%`); filters.push(`(task_id ILIKE $${values.length} OR task_name ILIKE $${values.length})`); }
-    if (!includeInactive) filters.push("status = 'Active'");
+    if (!includeInactive) filters.push("status = 'A'");
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
     const count = await pool.query(`SELECT COUNT(*)::int AS total FROM task_master ${where}`, values);
     values.push(pageSize, offset);
@@ -152,11 +152,11 @@ export const taskMasterRepository = {
     return { rows: result.rows, total: count.rows[0].total };
   },
   async create(task) {
-    const result = await pool.query('INSERT INTO task_master (task_id, task_name, status) VALUES ($1, $2, $3) RETURNING *', [task.taskId, task.taskName, task.status]);
+    const result = await pool.query('INSERT INTO task_master (task_name, status) VALUES ($1, $2) RETURNING *', [task.taskName, task.status === 'Active' ? 'A' : 'I']);
     return result.rows[0];
   },
   async update(id, task) {
-    const result = await pool.query('UPDATE task_master SET task_name = $2, status = $3 WHERE task_id = $1 RETURNING *', [id, task.taskName, task.status]);
+    const result = await pool.query('UPDATE task_master SET task_name = $2, status = $3 WHERE task_id = $1 RETURNING *', [id, task.taskName, task.status === 'Active' ? 'A' : 'I']);
     return result.rows[0] ?? null;
   },
   async remove(id) {
@@ -169,67 +169,73 @@ export const tasksRepository = {
   async list({ search, status, projectId, pageSize, offset }) {
     const values = [];
     const filters = [];
-    if (search) { values.push(`%${search}%`); filters.push(`(t.task_id ILIKE $${values.length} OR t.description ILIKE $${values.length})`); }
-    if (status) { values.push(status); filters.push(`t.status = $${values.length}`); }
-    if (projectId) { values.push(projectId); filters.push(`t.project_id = $${values.length}`); }
+    if (search) { values.push(`%${search}%`); filters.push(`
+    (CAST(m.pid AS TEXT) ILIKE $${values.length} 
+    OR m.description ILIKE $${values.length} 
+    OR tm.task_name ILIKE $${values.length}
+    OR p.project_id ILIKE $${values.length}
+    OR p.project_name ILIKE $${values.length}
+    OR m.assigned_to ILIKE $${values.length}
+    )`); }
+    if (status) { values.push(status); 
+    filters.push(`m.status = $${values.length}`); 
+    }
+    if (projectId) { 
+    values.push(projectId); 
+    filters.push(`m.assigned_to = $${values.length}`); }
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
-    const count = await pool.query(`SELECT COUNT(*)::int AS total FROM tasks t ${where}`, values);
+    const count = await pool.query(`
+    SELECT COUNT(*)::int AS total 
+    FROM task_user_mapping m 
+    JOIN task_master tm 
+      ON tm.task_id = m.pid
+    LEFT JOIN projects p
+      ON p.project_id = m.project_id
+    ${where}`, values);
     values.push(pageSize, offset);
     const result = await pool.query(
-      `SELECT t.task_id, t.project_id, t.description, t.status, t.reference_link, t.reference_document, t.created_at,
-              COALESCE(json_agg(json_build_object('userId', m.user_id, 'employeeId', u.emp_id, 'employeeName', u.user_name, 'assignedOn', m.assigned_on)) FILTER (WHERE m.user_id IS NOT NULL), '[]') AS users
-         FROM tasks t LEFT JOIN task_user_mapping m ON m.task_id = t.task_id LEFT JOIN users u ON u.user_id = m.user_id
-        ${where} GROUP BY t.task_id ORDER BY t.created_at DESC LIMIT $${values.length - 1} OFFSET $${values.length}`,
+      `
+      SELECT 
+        m.id, 
+        m.pid AS task_id, 
+        m.project_id, 
+        p.project_name, 
+        m.description, 
+        m.status, 
+        m.reference_link, 
+        m.reference_document, 
+        m.assigned_to, 
+        m.assigned_on, 
+        tm.task_name
+       FROM task_user_mapping m 
+       JOIN task_master tm 
+         ON tm.task_id = m.pid 
+       LEFT JOIN projects p
+         ON p.project_id = m.project_id
+       ${where}
+        ORDER BY m.assigned_on DESC NULLS LAST, m.id DESC LIMIT $${values.length - 1} OFFSET $${values.length}`,
       values,
     );
     return { rows: result.rows, total: count.rows[0].total };
   },
   async get(id) {
-    const result = await pool.query(
-      `SELECT t.task_id, t.project_id, t.description, t.status, t.reference_link, t.reference_document, t.created_at,
-              COALESCE(json_agg(json_build_object('userId', m.user_id, 'employeeId', u.emp_id, 'employeeName', u.user_name, 'assignedOn', m.assigned_on)) FILTER (WHERE m.user_id IS NOT NULL), '[]') AS users
-         FROM tasks t LEFT JOIN task_user_mapping m ON m.task_id = t.task_id LEFT JOIN users u ON u.user_id = m.user_id
-        WHERE t.task_id = $1 GROUP BY t.task_id`, [id],
-    );
+    const result = await pool.query('SELECT m.id, m.pid AS task_id, m.project_id,p.project_name, m.description, m.status, m.reference_link, m.reference_document, m.assigned_to, m.assigned_on, tm.task_name FROM task_user_mapping m JOIN task_master tm ON tm.task_id = m.pid LEFT JOIN projects p ON p.project_id = m.project_id WHERE m.id = $1', [id]);
     return result.rows[0] ?? null;
   },
   async create(task) {
-    const result = await pool.query(
-      `INSERT INTO tasks (task_id, project_id, description, status, reference_link, reference_document)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [task.taskId, task.projectId, task.description, task.status, task.referenceLink, task.referenceDocument],
-    );
+    const result = await pool.query('INSERT INTO task_user_mapping (pid, project_id, description, status, reference_link, reference_document, assigned_to, assigned_on) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *', [task.taskId,task.projectId, task.description, task.status, task.referenceLink, task.referenceDocument, task.assignedTo, task.assignedOn]);
     return result.rows[0];
   },
   async update(id, task) {
-    const result = await pool.query(
-      `UPDATE tasks SET project_id = $2, description = $3, status = $4, reference_link = $5, reference_document = $6
-        WHERE task_id = $1 RETURNING *`,
-      [id, task.projectId, task.description, task.status, task.referenceLink, task.referenceDocument],
-    );
+    const result = await pool.query('UPDATE task_user_mapping SET pid=$2, project_id = $3, description=$4, status=$5, reference_link=$6, reference_document=$7, assigned_to=$8, assigned_on=$9 WHERE id=$1 RETURNING *', [id, task.taskId, task.projectId, task.description, task.status, task.referenceLink, task.referenceDocument, task.assignedTo, task.assignedOn]);
     return result.rows[0] ?? null;
   },
   async remove(id) {
-    const result = await pool.query('DELETE FROM tasks WHERE task_id = $1', [id]);
+    const result = await pool.query('DELETE FROM task_user_mapping WHERE id = $1', [id]);
     return result.rowCount > 0;
   },
-  async assignments(id) {
-    const result = await pool.query('SELECT task_id, user_id, assigned_on FROM task_user_mapping WHERE task_id = $1 ORDER BY assigned_on', [id]);
-    return result.rows;
-  },
-  async assign(id, userId) {
-    const result = await pool.query('INSERT INTO task_user_mapping (task_id, user_id) VALUES ($1, $2) RETURNING *', [id, await resolveUserId(userId)]);
-    return result.rows[0];
-  },
-  async updateAssignment(id, userId, assignedOn) {
-    const result = await pool.query(
-      'UPDATE task_user_mapping SET assigned_on = $3 WHERE task_id = $1 AND user_id = $2 RETURNING *',
-      [id, userId, assignedOn],
-    );
-    return result.rows[0] ?? null;
-  },
-  async unassign(id, userId) {
-    const result = await pool.query('DELETE FROM task_user_mapping WHERE task_id = $1 AND user_id = $2', [id, userId]);
-    return result.rowCount > 0;
-  },
+  async assignments(id) { const result = await pool.query('SELECT id, pid, assigned_to, assigned_on FROM task_user_mapping WHERE id=$1', [id]); return result.rows; },
+  async assign(id, userId) { const result = await pool.query('UPDATE task_user_mapping SET assigned_to=$2 WHERE id=$1 RETURNING *', [id, userId]); return result.rows[0] ?? null; },
+  async updateAssignment(id, _userId, assignedOn) { const result = await pool.query('UPDATE task_user_mapping SET assigned_on=$2 WHERE id=$1 RETURNING *', [id, assignedOn]); return result.rows[0] ?? null; },
+  async unassign(id) { const result = await pool.query('UPDATE task_user_mapping SET assigned_to=NULL WHERE id=$1', [id]); return result.rowCount > 0; },
 };

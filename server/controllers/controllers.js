@@ -22,17 +22,20 @@ function bodyProject(body, id = body.projectId) {
 }
 
 function bodyTaskMaster(body, id = body.taskId) {
-  return { taskId: requiredString(id, 'taskId'), taskName: requiredString(body.taskName, 'taskName'), status: requiredString(body.status ?? 'Active', 'status') };
+  return { taskId: id ? requiredString(id, 'taskId') : undefined, taskName: requiredString(body.taskName, 'taskName'), status: requiredString(body.status ?? 'Active', 'status') };
 }
 
 function bodyTask(body, id = body.taskId) {
   return {
-    taskId: requiredString(id, 'taskId'),
+    id: id ? requiredString(id, 'id') : undefined,
+    taskId: requiredString(body.taskId ?? body.pid, 'taskId'),
     projectId: requiredString(body.projectId, 'projectId'),
     description: requiredString(body.description, 'description'),
     status: requiredString(body.status, 'status'),
     referenceLink: optionalString(body.referenceLink, 'referenceLink'),
     referenceDocument: optionalString(body.referenceDocument, 'referenceDocument'),
+    assignedTo: optionalString(body.assignedTo, 'assignedTo'),
+    assignedOn: optionalString(body.assignedOn, 'assignedOn'),
   };
 }
 

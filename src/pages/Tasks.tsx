@@ -13,16 +13,15 @@ import { formatDate } from '../data/mockData';
 import { employeeService } from '../services/employeeService';
 import { fileService, getFileTypeFromExtension, isSupportedFile } from '../services/fileService';
 import { taskService } from '../services/taskService';
-import type { Employee, Project, ProjectFile, Task, TaskStatus } from '../types';
+import type { Employee, Project,ProjectFile, Task, TaskStatus } from '../types';
 import { can } from '../utils/authorization';
-import { projectService } from '../services/projectService';
 import { taskMasterService } from '../services/taskService';
-
+import { projectService } from '../services/projectService';
 const statuses: TaskStatus[] = ['Pending', 'In Progress', 'Completed', 'On Hold', 'Cancelled', '25% progress complete', '50% progress complete', '75% progress complete'];
 
 type TaskFormState = {
-  taskId: string;
   projectId: string;
+  taskId: string;
   description: string;
   employeeId: string;
   assignedOn: string;
@@ -33,8 +32,8 @@ type TaskFormState = {
 };
 
 const emptyForm: TaskFormState = {
-  taskId: '',
   projectId: '',
+  taskId: '',
   description: '',
   employeeId: '',
   assignedOn: '',
@@ -49,8 +48,8 @@ export function Tasks() {
   const { showToast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [taskMaster, setTaskMaster] = useState<Array<{ taskId: string; taskName: string }>>([]);
+  const [projects, setProjects] = useState<Project[]>([]);  
   const [query, setQuery] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState({ taskId: '', dateFrom: '', dateTo: '', statuses: [] as TaskStatus[], employee: '' });
@@ -68,8 +67,10 @@ export function Tasks() {
   const loadData = async () => {
     try {
       setLoadError('');
-      const [taskData, employeeData, projectData, taskMasterData] = await Promise.all([taskService.getTasks(), employeeService.getEmployees(), projectService.getProjects(), taskMasterService.getActive()]);
-      setTasks(taskData); setEmployees(employeeData); setProjects(projectData); setTaskMaster(taskMasterData);
+      const [taskData, employeeData, taskMasterData, projectData] = await Promise.all([taskService.getTasks(), employeeService.getEmployees(), taskMasterService.getActive(),
+projectService.getProjects(),
+]);
+      setTasks(taskData); setEmployees(employeeData); setTaskMaster(taskMasterData); setProjects(projectData);
     } catch (err) { setLoadError(err instanceof Error ? err.message : 'Failed to load task data.'); }
   };
 
@@ -110,8 +111,8 @@ export function Tasks() {
   const openEdit = (task: Task) => {
     setEditing(task);
     setForm({
-      taskId: task.taskId,
       projectId: task.projectId ?? '',
+      taskId: task.taskId,
       description: task.description,
       employeeId: task.assignedTo.employeeId,
       assignedOn: task.assignedOn,
@@ -124,14 +125,13 @@ export function Tasks() {
     setModalOpen(true);
   };
 
-  const toTaskInput = (): Omit<Task, 'id'> & { projectId: string } => {
+  const toTaskInput = (): Omit<Task, 'id'> => {
     const employee = employees.find((item) => item.employeeId === form.employeeId);
     if (!employee) throw new Error('Assigned employee is required.');
-    if (!form.projectId) throw new Error('Project is required.');
     if (!taskMaster.some((item) => item.taskId === form.taskId)) throw new Error('Select an active Task Master record.');
     return {
-      taskId: form.taskId,
       projectId: form.projectId,
+      taskId: form.taskId,
       description: form.description,
       assignedTo: { employeeId: employee.employeeId, employeeName: employee.name },
       assignedOn: form.assignedOn,
@@ -184,6 +184,7 @@ export function Tasks() {
   };
 
   const exportRows = visibleTasks.map((task) => ({
+    Project: task.projectName ?? '',
     'Task ID': task.taskId,
     Description: task.description,
     'Employee ID': task.assignedTo.employeeId,
@@ -270,12 +271,13 @@ export function Tasks() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1100px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50">
-              <tr>{['Actions', 'Task ID', 'Description', 'Assigned To', 'Assigned On', 'Reference Link', 'Reference Document', 'Comments', 'Status'].map((column) => <th key={column} className="px-4 py-3 font-medium text-slate-600">{column}</th>)}</tr>
+              <tr>{['Actions', 'Project', 'Task ID', 'Description', 'Assigned To', 'Assigned On', 'Reference Link', 'Reference Document', 'Comments', 'Status'].map((column) => <th key={column} className="px-4 py-3 font-medium text-slate-600">{column}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {paginatedTasks.map((task) => (
                 <tr key={task.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3"><div className="flex gap-2">{can(user, 'tasks:edit') && <Button variant="ghost" size="sm" onClick={() => openEdit(task)}><Pencil className="h-4 w-4" />Edit</Button>}{can(user, 'tasks:delete') && <Button variant="ghost" size="sm" onClick={() => setDeleting(task)}><Trash2 className="h-4 w-4 text-red-600" /></Button>}</div></td>
+                  <td className ="px-4 py-3 text-slate-600 "> {task.ProjectName ?? task.projectId ?? "No Projecy"}</td>
                   <td className="px-4 py-3 text-slate-600">{task.taskId}</td>
                   <td className="px-4 py-3 text-slate-700">{task.description}</td>
                   <td className="px-4 py-3 text-slate-600">{task.assignedTo.employeeId} - {task.assignedTo.employeeName}</td>
@@ -294,14 +296,16 @@ export function Tasks() {
       <Pagination page={page} pageSize={pageSize} total={visibleTasks.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Task' : 'Assign Task'} size="xl">
         <form onSubmit={saveTask} className="grid gap-4 sm:grid-cols-2">
+        <select value= {form.projectId} onChange={(e) => setForm ({...form,projectId: e.target.value,})}
+        className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        required>
+        <option value="">Select Project</option>
+        { projects .filter((project) =>project.status !='Inactive').map((project) => (<option key ={project.id} value ={project.id}>
+        {project.name}</option>))} </select>
           <div>
             <input list="task-master-options" value={form.taskId} onChange={(e) => setForm({ ...form, taskId: e.target.value })} placeholder="Task ID" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
             <datalist id="task-master-options">{taskMaster.map((item) => <option key={item.taskId} value={item.taskId}>{item.taskName}</option>)}</datalist>
           </div>
-          <select value={form.projectId} onChange={(e) => setForm({ ...form, projectId: e.target.value })} className="rounded-md border border-slate-300 px-3 py-2 text-sm">
-            <option value="">Project</option>
-            {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
-          </select>
           <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
           <select value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className="rounded-md border border-slate-300 px-3 py-2 text-sm">
             <option value="">Assigned To</option>

@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express from 'express';
 import apiRouter from './server/routes/api.js';
+import authRouter from './server/routes/auth.js';
 import { errorHandler, notFound } from './server/middleware/errorHandler.js';
 
 const app = express();
@@ -8,6 +9,7 @@ app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/health', (_req, res) => res.json({ success: true, data: { status: 'ok' } }));
+app.use('/api/auth', authRouter);
 app.use('/api', apiRouter);
 app.use(notFound);
 app.use(errorHandler);

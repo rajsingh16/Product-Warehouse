@@ -1,7 +1,6 @@
 import { ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { DEMO_OTP } from '../data/mockData';
 import { authService } from '../services/authService';
 import { Button } from '../components/common/Button';
 import { Footer } from '../components/layout/Footer';
@@ -74,7 +73,7 @@ export function OTP() {
           <h1 className="text-xl font-semibold text-slate-900">Verify OTP</h1>
           <p className="mt-2 text-sm text-slate-600">
             A verification code has been sent to your registered WhatsApp number ending in{' '}
-            <strong>{pending.user.whatsappLastDigits}</strong>.
+            <strong>{pending.maskedPhone}</strong>.
           </p>
         </div>
 
@@ -115,9 +114,6 @@ export function OTP() {
           )}
         </div>
 
-        <p className="mt-6 rounded-md bg-slate-50 px-3 py-2 text-center text-xs text-slate-500">
-          Demo OTP: {DEMO_OTP} (also logged to browser console)
-        </p>
         </div>
       </div>
       <Footer />
