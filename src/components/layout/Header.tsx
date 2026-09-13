@@ -26,7 +26,8 @@ export function Header({ title, onOpenSidebar }: { title: string; onOpenSidebar:
     navigate('/login');
   };
 
-  const initials = user?.name
+  const displayName = user?.name ?? 'User';
+  const initials = displayName
     .split(' ')
     .map((n) => n[0])
     .join('')
@@ -59,7 +60,7 @@ export function Header({ title, onOpenSidebar }: { title: string; onOpenSidebar:
             {initials}
           </div>
           <div className="hidden text-left sm:block">
-            <p className="text-sm font-medium text-slate-900">{user?.name}</p>
+            <p className="text-sm font-medium text-slate-900">{displayName}</p>
             <p className="text-xs text-slate-500">{user?.role}</p>
           </div>
           <ChevronDown className="h-4 w-4 text-slate-400" />

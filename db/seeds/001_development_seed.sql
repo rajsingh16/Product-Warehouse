@@ -18,16 +18,17 @@ VALUES
     ('task_delete')
 ON CONFLICT (permission_code) DO NOTHING;
 
-INSERT INTO users (user_id, emp_id, user_name, mobile, email, user_type)
+INSERT INTO users (user_id, emp_id, user_name, mobile, email, user_type, password_hash)
 VALUES
-    ('user-admin', 'EMP001', 'Development Administrator', NULL, 'development-admin@example.invalid', 'Administrator'),
-    ('user-standard', 'EMP002', 'Development User', NULL, 'development-user@example.invalid', 'User')
+    ('user-admin', 'EMP001', 'Development Administrator', '+918527285412', 'development-admin@example.invalid', 'Administrator', '$2b$12$MKuBaMH9gAhmvTlo81Ej1OTZ0MYLU/Q6Pk0RwBUyl64JoGS9/1VNS'),
+    ('user-standard', 'EMP002', 'Development User', '+917011988927', 'development-user@example.invalid', 'User', '$2b$12$z6qChQhidCaP7Tgn4hDT.ODw5zvuvJ/zYPe3UjLqDbVP32Trw4tWi')
 ON CONFLICT (user_id) DO UPDATE SET
     emp_id = EXCLUDED.emp_id,
     user_name = EXCLUDED.user_name,
     mobile = EXCLUDED.mobile,
     email = EXCLUDED.email,
-    user_type = EXCLUDED.user_type;
+    user_type = EXCLUDED.user_type,
+    password_hash = EXCLUDED.password_hash;
 
 INSERT INTO user_permissions (user_id, permission_code)
 SELECT 'user-admin', permission_code
@@ -53,17 +54,13 @@ VALUES
     ('project-demo', 'user-standard')
 ON CONFLICT (project_id, user_id) DO NOTHING;
 
-INSERT INTO task_master (task_id, task_name, status)
+INSERT INTO task_master (task_name, status)
 VALUES
-    ('TASK001', 'Prepare project report', 'Active'),
-    ('TASK002', 'Review project data', 'Active')
-ON CONFLICT (task_id) DO UPDATE SET
-    task_name = EXCLUDED.task_name,
-    status = EXCLUDED.status;
+    ('Prepare project report', 'A'),
+    ('Review project data', 'A');
 
-INSERT INTO tasks (
-    task_id,
-    project_id,
+INSERT INTO task_user_mapping (
+    pid,
     description,
     status,
     reference_link,
@@ -71,32 +68,18 @@ INSERT INTO tasks (
 )
 VALUES
     (
-        'TASK001',
-        'project-demo',
+        1,
         'Prepare the initial development project report.',
         'Pending',
         'https://example.invalid/project-report',
         NULL
     ),
     (
-        'TASK002',
-        'project-demo',
+        2,
         'Review the development project data.',
         'In Progress',
         NULL,
         NULL
-    )
-ON CONFLICT (task_id) DO UPDATE SET
-    project_id = EXCLUDED.project_id,
-    description = EXCLUDED.description,
-    status = EXCLUDED.status,
-    reference_link = EXCLUDED.reference_link,
-    reference_document = EXCLUDED.reference_document;
-
-INSERT INTO task_user_mapping (task_id, user_id)
-VALUES
-    ('TASK001', 'user-admin'),
-    ('TASK002', 'user-standard')
-ON CONFLICT (task_id, user_id) DO NOTHING;
+    );
 
 COMMIT;

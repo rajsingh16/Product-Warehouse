@@ -22,8 +22,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
     apiRequest<{ user_id: string; emp_id: string; user_name: string; mobile: string | null; email: string; user_type: 'Administrator' | 'User'; permissions: AuthUser['permissions'] }>('/api/me')
-      .then((record) => setUser((current) => current ? { ...current, id: record.user_id, userId: record.user_id, employeeId: record.emp_id, name: record.user_name, email: record.email, whatsappLastDigits: record.mobile?.slice(-2) ?? current.whatsappLastDigits, userType: record.user_type, permissions: record.permissions ?? [] } : current))
-      .catch(() => undefined);
+      .then((record) => setUser((current) => current ? { ...current, id: record.user_id, userId: record.user_id, employeeId: record.emp_id, name: record.user_name, email: record.email, whatsappLastDigits: record.mobile?.slice(-2) ?? current.whatsappLastDigits, userType: record.user_type, role: record.user_type === 'Administrator' ? 'Administrator' : 'Employee', permissions: record.permissions ?? [] } : current))
+      .catch(() => { authService.logout(); setUser(null); });
   }, [user?.id]);
 
   const login = useCallback(async (userId: string, password: string) => {
