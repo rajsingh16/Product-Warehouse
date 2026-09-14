@@ -1,18 +1,21 @@
-import { Download, Eye, Trash2 } from 'lucide-react';
+import { Download, Eye,Folder as FolderIcon, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom'
 import { formatDate, formatFileSize } from '../../data/mockData';
 import { fileService, getFileTypeLabel } from '../../services/fileService';
-import type { ProjectFile } from '../../types';
+import type { Folder, ProjectFile } from '../../types';
 import { Button } from '../common/Button';
 import { FileIcon } from './FileIcon';
 
 interface FileTableProps {
   files: ProjectFile[];
+  folders?: Folder[];
+  project: string;
   onPreview: (file: ProjectFile) => void;
   onDelete?: (file: ProjectFile) => void;
 }
 
-export function FileTable({ files, onPreview, onDelete }: FileTableProps) {
-  if (files.length === 0) {
+export function FileTable({ files,folders =[], project, onPreview, onDelete }: FileTableProps) {
+  if (files.length === 0 && folders.length === 0) {
     return (
       <div className="rounded-lg border border-slate-200 bg-white p-12 text-center">
         <p className="text-slate-500">No files in this folder. Upload files to get started.</p>
@@ -26,15 +29,47 @@ export function FileTable({ files, onPreview, onDelete }: FileTableProps) {
         <table className="w-full text-left text-sm">
           <thead className="border-b border-slate-200 bg-slate-50">
             <tr>
-              <th className="px-4 py-3 font-medium text-slate-600">File Name</th>
+              <th className="px-4 py-3 font-medium text-slate-600">Name</th>
               <th className="px-4 py-3 font-medium text-slate-600">File Type</th>
               <th className="px-4 py-3 font-medium text-slate-600">Size</th>
               <th className="px-4 py-3 font-medium text-slate-600">Uploaded By</th>
-              <th className="px-4 py-3 font-medium text-slate-600">Uploaded Date</th>
+              <th className="px-4 py-3 font-medium text-slate-600">Modified On</th>
               <th className="px-4 py-3 font-medium text-slate-600">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
+            {folders.map((folder) => (
+              <tr key={folder.id} className="hover:bg-slate-50">
+                <td className="px-4 py-3">
+                  <Link
+                    to={`/projects/${project}/${folder.id}`}
+                    className="flex items-center gap-2 font-medium text-slate-900 hover:underline"
+                  >
+                    <FolderIcon className="h-5 w-5 text-slate-500" />
+                    <span>{folder.name}</span>
+                  </Link>
+                </td>
+                <td className="px-4 py-3 text-slate-600">
+                  Folder
+                </td>
+                <td className="px-4 py-3 text-slate-600">
+                  -
+                </td>
+                <td className="px-4 py-3 text-slate-600">
+                  -
+                </td>
+                <td className="px-4 py-3 text-slate-600">
+                  -
+                </td>
+                <td className ="px-4 py-3">
+                  <Link to={`/project/${project}/{folder.id}`}
+                  className = "text-sm text-slate-600 hover:underline">
+                    Open
+                  </Link>
+                </td>
+
+              </tr>
+            ))}
             {files.map((file) => (
               <tr key={file.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3">

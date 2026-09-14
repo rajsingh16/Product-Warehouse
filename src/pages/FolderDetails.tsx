@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Folder as FolderIcon, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
+import { Modal } from '../components/common/Modal';
 import { FilePreview } from '../components/files/FilePreview';
 import { FileTable } from '../components/files/FileTable';
 import { FileUpload } from '../components/files/FileUpload';
@@ -23,6 +24,8 @@ export function FolderDetails() {
   const [previewFile, setPreviewFile] = useState<ProjectFile | null>(null);
   const [deleteFile, setDeleteFile] = useState<ProjectFile | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
 
   const loadData = useCallback(async () => {
     if (!projectId || !folderId) return;
@@ -43,16 +46,25 @@ export function FolderDetails() {
     return undefined;
   };
   const folder = project ? findFolder(project.folders) : undefined;
+  const isRootFolder = project
+    ? project.folders.some((rootFolder) => rootFolder.id === folder?.id)
+    : false;
 
   const handleCreateFolder = async () => {
     if (!project || !folder) return;
-    const name = window.prompt('Folder name');
-    if (!name?.trim()) return;
+    const name = newFolderName.trim();
+    if (!name){
+      showToast('Folder name is required.', 'error');
+     return;}
     const children = folder.folders ?? [];
-    if (children.some((child) => child.name.toLowerCase() === name.trim().toLowerCase())) { showToast('A folder with that name already exists.', 'error'); return; }
-    folder.folders = [...children, { id: `${folder.id}-folder-${Date.now()}`, name: name.trim(), files: [], folders: [] }];
+    if (children.some((child) => child.name.toLowerCase() === name.toLowerCase())) { showToast('A folder with that name already exists.', 'error'); return; }
+    
+    folder.folders = [...children, { id: `${folder.id}-folder-${Date.now()}`, name, files: [], folders: [] }];
+    
     await projectService.saveProject(project);
     setProject({ ...project, folders: [...project.folders] });
+    setNewFolderName('');
+    setCreateFolderOpen(false);
     showToast('Folder created successfully.');
   };
 
@@ -118,23 +130,88 @@ export function FolderDetails() {
         <p className="mt-1 text-sm text-slate-600">{project.name}</p>
       </div>
 
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <button type="button" onClick={handleCreateFolder} className="inline-flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"><Plus className="h-4 w-4" /> New Folder</button>
-        {(folder.folders ?? []).map((child) => <Link key={child.id} to={`/projects/${project.id}/${child.id}`} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-slate-400"><FolderIcon className="h-4 w-4 text-slate-500" />{child.name}</Link>)}
-      </div>
-
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4">
+        { isRootFolder ? (<button type="button" 
+        onClick={() =>{
+          setNewFolderName('');
+          setCreateFolderOpen(true);
+        }}
+        className="inline-flex items-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        ><Plus className="h-4 w-4" /> 
+        New Folder
+        </button>
+        ):(
+          <div />
+        )}
+        
         <FileUpload onUpload={handleUpload} />
       </div>
 
       <FileTable
         files={files}
+        folders={folder.folders ?? []}
+        project={project.id}
         onPreview={setPreviewFile}
         onDelete={setDeleteFile}
       />
 
       <FilePreview file={previewFile} onClose={() => setPreviewFile(null)} />
+      <Modal
+        isOpen={createFolderOpen}
+        onClose={() => {
+          setCreateFolderOpen(false);
+          setNewFolderName('');
+        }}
+        title="Create New Folder"
+        size="sm"
+      >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleCreateFolder();
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label
+              htmlFor="new-folder-name"
+              className="mb-1 block text-sm font-medium text-slate-700"
+            >
+              Folder Name
+            </label>
 
+            <input
+              id="new-folder-name"
+              type="text"
+              value={newFolderName}
+              onChange={(event) => setNewFolderName(event.target.value)}
+              placeholder="Enter folder name"
+              autoFocus
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+            type="button"
+            onClick={() => {
+              setCreateFolderOpen(false);
+              setNewFolderName('');
+            }}
+            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              className="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+            >
+              Create Folder
+            </button>
+          </div>
+        </form>
+      </Modal>
       <ConfirmDialog
         isOpen={!!deleteFile}
         title="Delete File?"
