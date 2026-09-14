@@ -42,6 +42,16 @@ const emptyForm: TaskFormState = {
   comments: '',
   status: 'Pending',
 };
+const formatTaskOption = (taskName: string, taskId: string) => {
+  const maxLength = 45;
+
+  const shortName =
+    taskName.length > maxLength
+      ? `${taskName.substring(0, maxLength)}...`
+      : taskName;
+
+  return `${shortName} (${taskId})`;
+};
 
 export function Tasks() {
   const { user } = useAuth();
@@ -271,13 +281,13 @@ projectService.getProjects(),
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1100px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50">
-              <tr>{['Actions', 'Project', 'Task ID', 'Description', 'Assigned To', 'Assigned On', 'Reference Link', 'Reference Document', 'Comments', 'Status'].map((column) => <th key={column} className="px-4 py-3 font-medium text-slate-600">{column}</th>)}</tr>
+              <tr>{['Actions', 'Project', 'Select Task', 'Description', 'Assigned To', 'Assigned On', 'Reference Link', 'Reference Document', 'Comments', 'Status'].map((column) => <th key={column} className="px-4 py-3 font-medium text-slate-600">{column}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {paginatedTasks.map((task) => (
                 <tr key={task.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3"><div className="flex gap-2">{can(user, 'tasks:edit') && <Button variant="ghost" size="sm" onClick={() => openEdit(task)}><Pencil className="h-4 w-4" />Edit</Button>}{can(user, 'tasks:delete') && <Button variant="ghost" size="sm" onClick={() => setDeleting(task)}><Trash2 className="h-4 w-4 text-red-600" /></Button>}</div></td>
-                  <td className ="px-4 py-3 text-slate-600 "> {task.ProjectName ?? task.projectId ?? "No Projecy"}</td>
+                  <td className ="px-4 py-3 text-slate-600 "> {task.projectName ?? task.projectId ?? "No Projecy"}</td>
                   <td className="px-4 py-3 text-slate-600">{task.taskId}</td>
                   <td className="px-4 py-3 text-slate-700">{task.description}</td>
                   <td className="px-4 py-3 text-slate-600">{task.assignedTo.employeeId} - {task.assignedTo.employeeName}</td>
@@ -302,10 +312,24 @@ projectService.getProjects(),
         <option value="">Select Project</option>
         { projects .filter((project) =>project.status !='Inactive').map((project) => (<option key ={project.id} value ={project.id}>
         {project.name}</option>))} </select>
-          <div>
-            <input list="task-master-options" value={form.taskId} onChange={(e) => setForm({ ...form, taskId: e.target.value })} placeholder="Task ID" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
-            <datalist id="task-master-options">{taskMaster.map((item) => <option key={item.taskId} value={item.taskId}>{item.taskName}</option>)}</datalist>
-          </div>
+        <div>
+          <select
+            value={form.taskId}
+            onChange={(e) =>
+              setForm({ ...form, taskId: e.target.value })
+            }
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
+            required
+          >
+            <option value="">Select Task</option>
+
+            {taskMaster.map((task) => (
+              <option key={task.taskId} value={task.taskId}>
+                {formatTaskOption(task.taskName, task.taskId)}
+              </option>
+            ))}
+          </select>
+        </div>
           <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
           <select value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className="rounded-md border border-slate-300 px-3 py-2 text-sm">
             <option value="">Assigned To</option>
