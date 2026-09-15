@@ -34,7 +34,7 @@ export function Login() {
 
     const result = await login(userId, password);
     if (result.success) {
-      navigate('/otp');
+      navigate('/dashboard');
     } else {
       setError(result.error ?? 'Invalid User ID or Password.');
     }

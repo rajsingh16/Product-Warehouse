@@ -10,7 +10,7 @@ import { EmployeeDetails } from './pages/EmployeeDetails';
 import { Employees } from './pages/Employees';
 import { FolderDetails } from './pages/FolderDetails';
 import { Login } from './pages/Login';
-import { OTP } from './pages/OTP';
+//import { OTP } from './pages/OTP';
 import { ProjectDetails } from './pages/ProjectDetails';
 import { Projects } from './pages/Projects';
 import { Tasks } from './pages/Tasks';
@@ -26,7 +26,6 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/otp" element={<OTP />} />
 
       <Route
         element={

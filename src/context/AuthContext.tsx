@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!result.success) {
         return { success: false, error: result.error };
       }
+      setUser(result.user);
       return { success: true };
     } finally {
       setIsLoading(false);

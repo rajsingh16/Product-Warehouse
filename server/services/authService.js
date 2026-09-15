@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { pool } from '../db/pool.js';
 import { HttpError } from '../utils/http.js';
-import { maskPhone, normalizePhone, sendWhatsAppOtp } from './whatsapp.js';
+//import { maskPhone, normalizePhone, sendWhatsAppOtp } from './whatsapp.js';
 
 const TTL = 5 * 60 * 1000;
 const RESEND = 30 * 1000;
@@ -14,16 +14,38 @@ function publicUser(row) { return { id: row.user_id, userId: row.user_id, employ
 function otpHash(otp) { return crypto.createHash('sha256').update(`${otp}:${process.env.JWT_SECRET}`).digest('hex'); }
 function newOtp() { return String(crypto.randomInt(0, 1000000)).padStart(6, '0'); }
 
-export async function beginLogin(userId, password, ip) {
-  const result = await pool.query(`SELECT u.*, COALESCE(array_agg(up.permission_code) FILTER (WHERE up.permission_code IS NOT NULL), '{}') permissions FROM users u LEFT JOIN user_permissions up ON up.user_id=u.user_id WHERE u.user_id=$1 OR u.emp_id=$1 GROUP BY u.user_id`, [userId]);
+export async function beginLogin(userId, password) {
+  const result = await pool.query(
+    `SELECT
+       u.*,
+       COALESCE(
+         array_agg(up.permission_code)
+         FILTER (WHERE up.permission_code IS NOT NULL),
+         '{}'
+       ) permissions
+     FROM users u
+     LEFT JOIN user_permissions up
+       ON up.user_id = u.user_id
+     WHERE u.user_id = $1
+        OR u.emp_id = $1
+     GROUP BY u.user_id`,
+    [userId]
+  );
+
   const user = result.rows[0];
-  if (!user || !user.password_hash || !(await bcrypt.compare(password, user.password_hash))) throw new HttpError(401, generic);
-  const phone = normalizePhone(user.mobile);
-  const otp = process.env.WHATSAPP_MOCK === 'true' && /^\d{6}$/.test(process.env.WHATSAPP_TEST_OTP ?? '') ? process.env.WHATSAPP_TEST_OTP : newOtp(); const id = crypto.randomUUID(); const now = Date.now();
-  await pool.query('UPDATE otp_challenges SET consumed_at=NOW() WHERE user_id=$1 AND consumed_at IS NULL', [user.user_id]);
-  await pool.query('INSERT INTO otp_challenges (challenge_id,user_id,otp_hash,expires_at,resend_available_at) VALUES ($1,$2,$3,to_timestamp($4/1000.0),to_timestamp($5/1000.0))', [id, user.user_id, otpHash(otp), now + TTL, now + RESEND]);
-  try { await sendWhatsAppOtp(phone, otp); } catch (error) { await pool.query('UPDATE otp_challenges SET consumed_at=NOW() WHERE challenge_id=$1', [id]); throw error; }
-  return { challengeId: id, maskedPhone: maskPhone(phone), expiresAt: now + TTL, resendAvailableAt: now + RESEND };
+
+  if (
+    !user ||
+    !user.password_hash ||
+    !(await bcrypt.compare(password, user.password_hash))
+  ) {
+    throw new HttpError(401, generic);
+  }
+
+  return {
+    token: tokenFor(user),
+    user: publicUser(user),
+  };
 }
 
 export async function verifyOtp(challengeId, otp) {
