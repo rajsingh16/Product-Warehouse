@@ -6,8 +6,27 @@ const TOKEN_KEY = 'pw_access_token';
 const PENDING_AUTH_KEY = 'pw_pending_auth';
 
 export const authService = {
-  async login(userId: string, password: string): Promise<{ success: true; pending: PendingAuth } | { success: false; error: string }> {
-    try { const pending = await apiRequest<PendingAuth>('/api/auth/login', { method: 'POST', body: JSON.stringify({ userId, password }) }); sessionStorage.setItem(PENDING_AUTH_KEY, JSON.stringify(pending)); return { success: true, pending }; }
+  async login(userId: string, password: string): Promise<{ success: true; user: AuthUser } | { success: false; error: string }> {
+    try {
+      const result = await apiRequest<{
+        token: string;
+        user: AuthUser;
+      }>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId,
+          password,
+        }),
+      });
+  
+      localStorage.setItem(AUTH_KEY, JSON.stringify(result.user));
+      localStorage.setItem(TOKEN_KEY, result.token);
+  
+      return {
+        success: true,
+        user: result.user,
+      };
+    }
     catch (error) { return { success: false, error: error instanceof Error ? error.message : 'Unable to login.' }; }
   },
   async verifyOTP(otp: string): Promise<{ success: true; user: AuthUser } | { success: false; error: string }> {

@@ -57,7 +57,7 @@ export function TaskMaster() {
 
   return (
     <Layout breadcrumbs={[{ label: 'Master' }, { label: 'Task Master', path: '/master/task-master' }]} title="Task Master">
-      <div className="mb-6 flex flex-col gap-4">
+      <div className="mb-6 flex flex-col gap-4 pb-4">
         <div><h1 className="text-2xl font-semibold text-slate-900">Task Master</h1><p className="mt-1 text-sm text-slate-500">Manage valid task identifiers and names</p></div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search Task ID or Task Name" className="w-full max-w-md rounded-md border border-slate-300 px-3 py-2 text-sm" />
@@ -66,7 +66,7 @@ export function TaskMaster() {
       </div>
       {loading ? <div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" /></div> : error ? <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">{error}</div> : (
         <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="max-h-[calc(100vh-18rem)] overflow-auto"><table className="w-full text-left text-sm"><thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50"><tr>{['Actions', 'Task ID', 'Task Name', 'Status'].map((header) => <th key={header} className="px-4 py-3 font-medium text-slate-600">{header}</th>)}</tr></thead><tbody className="divide-y divide-slate-200">
+          <div className="max-h-[calc(100vh-22rem)] overflow-auto"><table className="w-full text-left text-sm"><thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50"><tr>{['Actions', 'Task ID', 'Task Name', 'Status'].map((header) => <th key={header} className="px-4 py-3 font-medium text-slate-600">{header}</th>)}</tr></thead><tbody className="divide-y divide-slate-200">
             {visible.map((record) => <tr key={record.taskId} className="hover:bg-slate-50"><td className="px-4 py-3"><div className="flex gap-2"><Button variant="ghost" size="sm" onClick={() => openEdit(record)}><Pencil className="h-4 w-4" />Edit</Button><Button variant="ghost" size="sm" onClick={() => setDeleting(record)}><Trash2 className="h-4 w-4 text-red-600" /></Button></div></td><td className="px-4 py-3 text-slate-600">{record.taskId}</td><td className="px-4 py-3 font-medium text-slate-900">{record.taskName}</td><td className="px-4 py-3 text-slate-600">{record.status}</td></tr>)}
             {visible.length === 0 && <tr><td colSpan={4} className="px-4 py-12 text-center text-slate-500">No Task Master records found.</td></tr>}
           </tbody></table></div>
