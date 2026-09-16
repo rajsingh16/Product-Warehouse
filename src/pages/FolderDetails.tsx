@@ -12,10 +12,14 @@ import { useToast } from '../context/ToastContext';
 import { fileService } from '../services/fileService';
 import { projectService } from '../services/projectService';
 import type { Folder, Project, ProjectFile } from '../types';
+import { can } from '../utils/authorization';
 
 export function FolderDetails() {
   const { projectId, folderId } = useParams<{ projectId: string; folderId: string }>();
   const { user } = useAuth();
+  const canViewDocuments = can(user, 'document_view');
+  const canUploadDocuments = can(user, 'document_upload');
+  const canDeleteDocuments = can(user, 'document_delete');
   const { showToast } = useToast();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -30,12 +34,19 @@ export function FolderDetails() {
   const loadData = useCallback(async () => {
     if (!projectId || !folderId) return;
     setLoading(true);
-    const proj = await projectService.getProject(projectId);
-    setProject(proj);
-    const folderFiles = await fileService.getFiles(projectId, folderId);
-    setFiles(folderFiles);
-    setLoading(false);
-  }, [projectId, folderId]);
+    try{
+      const proj = await projectService.getProject(projectId);
+      setProject(proj);
+      if (canViewDocuments) {
+        const folderFiles = await fileService.getFiles(projectId, folderId);
+        setFiles(folderFiles);
+      } else{
+        setFiles([]);
+      }
+    }finally {
+      setLoading(false);
+    }
+  }, [projectId, folderId, canViewDocuments]);
 
   useEffect(() => {
     loadData();
@@ -70,6 +81,10 @@ export function FolderDetails() {
 
   const handleUpload = async (uploadFiles: File[]) => {
     if (!projectId || !folderId || !user) return;
+    if (!canUploadDocuments) {
+      showToast('You do not have permission to upload documents.', 'error');
+      return;
+    }
     await fileService.uploadFiles(projectId, folderId, uploadFiles, user.name);
     showToast('Files uploaded successfully.');
     await loadData();
@@ -77,6 +92,10 @@ export function FolderDetails() {
 
   const handleDelete = async () => {
     if (!projectId || !folderId || !deleteFile) return;
+    if (!canDeleteDocuments) {
+      showToast('You do not have permission to delete documents.', 'error');
+      return;
+    }
     setDeleting(true);
     try {
       await fileService.deleteFile(projectId, folderId, deleteFile.id);
@@ -144,15 +163,16 @@ export function FolderDetails() {
           <div />
         )}
         
-        <FileUpload onUpload={handleUpload} />
+        {canUploadDocuments && (<FileUpload onUpload={handleUpload} />
+      )}
       </div>
 
       <FileTable
         files={files}
         folders={folder.folders ?? []}
         project={project.id}
-        onPreview={setPreviewFile}
-        onDelete={setDeleteFile}
+        onPreview={canViewDocuments ? setPreviewFile : undefined}
+        onDelete={canDeleteDocuments ? setDeleteFile : undefined}
       />
 
       <FilePreview file={previewFile} onClose={() => setPreviewFile(null)} />

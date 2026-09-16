@@ -19,6 +19,8 @@
     "vite": "^8.2.0"
   },
   "dependencies": {
+    "@azure/identity": "^4.13.3",
+    "@azure/storage-blob": "^12.33.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

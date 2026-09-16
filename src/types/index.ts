@@ -60,6 +60,10 @@ export type RoleName = 'Administrator' | 'Manager' | 'Project Manager' | 'Employ
 export type RoleId =
   | 'project_view'
   | 'project_create'
+  | 'project_delete'
+  | 'document_view'
+  | 'document_upload'
+  | 'document_delete'
   | 'employee_view'
   | 'employee_create'
   | 'user_view'
@@ -73,7 +77,7 @@ export type RoleId =
 export interface RoleDefinition {
   id: RoleId;
   label: string;
-  group: 'Project' | 'Employee' | 'User' | 'Task';
+  group: 'Project' | 'Document' | 'Employee' | 'User' | 'Task';
 }
 
 export interface TaskReference {

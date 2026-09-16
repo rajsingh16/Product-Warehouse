@@ -10,7 +10,7 @@ interface FileTableProps {
   files: ProjectFile[];
   folders?: Folder[];
   project: string;
-  onPreview: (file: ProjectFile) => void;
+  onPreview?: (file: ProjectFile) => void;
   onDelete?: (file: ProjectFile) => void;
 }
 
@@ -62,7 +62,7 @@ export function FileTable({ files,folders =[], project, onPreview, onDelete }: F
                   -
                 </td>
                 <td className ="px-4 py-3">
-                  <Link to={`/project/${project}/{folder.id}`}
+                  <Link to={`/project/${project}/${folder.id}`}
                   className = "text-sm text-slate-600 hover:underline">
                     Open
                   </Link>
@@ -84,14 +84,18 @@ export function FileTable({ files,folders =[], project, onPreview, onDelete }: F
                 <td className="px-4 py-3 text-slate-600">{formatDate(file.uploadedAt)}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => onPreview(file)}>
+                    {onPreview && (
+                      <Button variant="ghost" size="sm" onClick={() => onPreview(file)}>
                       <Eye className="h-4 w-4" />
                       Preview
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => fileService.downloadFile(file)}>
+                    )}
+                    {onPreview && (
+                      <Button variant="ghost" size="sm" onClick={() => fileService.downloadFile(file)}>
                       <Download className="h-4 w-4" />
                       Download
                     </Button>
+                    )}
                     {onDelete && (
                       <Button variant="ghost" size="sm" onClick={() => onDelete(file)}>
                         <Trash2 className="h-4 w-4 text-red-600" />

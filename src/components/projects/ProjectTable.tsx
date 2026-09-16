@@ -6,8 +6,8 @@ import { Button } from '../common/Button';
 
 interface ProjectTableProps {
   projects: Project[];
-  onEdit: (project: Project) => void;
-  onDelete: (project: Project) => void;
+  onEdit?: (project: Project) => void;
+  onDelete?: (project: Project) => void;
 }
 
 export function ProjectTable({ projects, onEdit, onDelete }: ProjectTableProps) {
@@ -48,14 +48,18 @@ export function ProjectTable({ projects, onEdit, onDelete }: ProjectTableProps) 
                 <td className="px-4 py-3 text-slate-600">{formatDate(project.createdAt)}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => onEdit(project)}>
+                    {onEdit && (
+                      <Button variant="ghost" size="sm" onClick={() => onEdit(project)}>
                       <Pencil className="h-4 w-4" />
                       Edit
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => onDelete(project)}>
+                    )}
+                    {onDelete && (
+                      <Button variant="ghost" size="sm" onClick={() => onDelete(project)}>
                       <Trash2 className="h-4 w-4 text-red-600" />
                       Delete
                     </Button>
+                    )}
                   </div>
                 </td>
               </tr>

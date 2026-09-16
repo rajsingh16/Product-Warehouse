@@ -99,7 +99,7 @@ export function Projects() {
       ) : loadError ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">{loadError}</div>
       ) : (
-        <><ProjectTable projects={visibleProjects} onEdit={setEditProject} onDelete={setDeleteProject} /><Pagination page={page} pageSize={pageSize} total={projects.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} /></>
+        <><ProjectTable projects={visibleProjects} onEdit={can(user, 'projects:edit') ? setEditProject : undefined} onDelete={can(user, 'projects:delete') ? setDeleteProject : undefined} /><Pagination page={page} pageSize={pageSize} total={projects.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} /></>
       )}
 
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="New Project" size="lg">

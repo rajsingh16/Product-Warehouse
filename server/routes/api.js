@@ -22,7 +22,7 @@ router.get('/projects', requirePermission('project_view'), asyncHandler(projects
 router.get('/projects/:id', requirePermission('project_view'), asyncHandler(projectsController.get));
 router.post('/projects', requirePermission('project_create'), asyncHandler(projectsController.create));
 router.put('/projects/:id', requirePermission('project_create'), asyncHandler(projectsController.update));
-router.delete('/projects/:id', requireAdministrator, asyncHandler(projectsController.remove));
+router.delete('/projects/:id', requirePermission('project_delete'), asyncHandler(projectsController.remove));
 router.get('/projects/:id/users', requirePermission('project_view'), asyncHandler(projectsController.assignments));
 router.post('/projects/:id/users', requirePermission('user_assign'), asyncHandler(projectsController.assign));
 router.delete('/projects/:id/users/:userId', requirePermission('user_assign'), asyncHandler(projectsController.unassign));

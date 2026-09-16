@@ -2,7 +2,10 @@ import { permissionsRepository, projectsRepository, taskMasterRepository, tasksR
 import { HttpError, paginatedResponse, parsePagination, permissionList, requiredString, optionalString } from '../utils/http.js';
 
 const allowedPermissions = new Set([
-  'project_view', 'project_create', 'employee_view', 'employee_create', 'user_view', 'user_create', 'user_assign',
+  'project_view', 'project_create','project_delete',
+  'document_view','document_upload','document_delete', 
+  'employee_view', 'employee_create', 
+  'user_view', 'user_create', 'user_assign',
   'task_view', 'task_create', 'task_edit', 'task_delete',
 ]);
 

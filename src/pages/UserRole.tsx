@@ -20,6 +20,7 @@ type RoleFormState = {
 
 const roleTone: Record<RoleDefinition['group'], string> = {
   Project: 'border-sky-200 bg-sky-50 text-sky-800',
+  Document: 'border-blue-200 bg-blue-50 text-blue-800',
   Employee: 'border-emerald-200 bg-emerald-50 text-emerald-800',
   User: 'border-violet-200 bg-violet-50 text-violet-800',
   Task: 'border-amber-200 bg-amber-50 text-amber-800',
@@ -135,7 +136,7 @@ export function UserRole() {
 
   const groupedRoles = availableRoles.reduce<Record<RoleDefinition['group'], RoleDefinition[]>>(
     (groups, role) => ({ ...groups, [role.group]: [...groups[role.group], role] }),
-    { Project: [], Employee: [], User: [], Task: [] },
+    { Project: [], Document: [], Employee: [], User: [], Task: [] },
   );
 
   return (

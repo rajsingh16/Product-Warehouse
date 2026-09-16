@@ -2,7 +2,8 @@ import { apiRequest, queryString } from './apiClient';
 import type { RoleDefinition, RoleId, UserRoleAssignment } from '../types';
 
 export const availableRoles: RoleDefinition[] = [
-  { id: 'project_view', label: 'Project View', group: 'Project' }, { id: 'project_create', label: 'Project Create', group: 'Project' },
+  { id: 'project_view', label: 'Project View', group: 'Project' }, { id: 'project_create', label: 'Project Create', group: 'Project' },{ id: 'project_delete', label: 'Project Delete', group: 'Project' },
+  { id: 'document_view', label: 'Document View', group: 'Document' },{ id: 'document_upload', label: 'Document upload', group: 'Document' },{ id: 'document_delete', label: 'Document delete', group: 'Document' },
   { id: 'employee_view', label: 'Employee View', group: 'Employee' }, { id: 'employee_create', label: 'Employee Create', group: 'Employee' },
   { id: 'user_view', label: 'User View', group: 'User' }, { id: 'user_create', label: 'User Create', group: 'User' }, { id: 'user_assign', label: 'User Assign', group: 'User' },
   { id: 'task_view', label: 'Task View', group: 'Task' }, { id: 'task_create', label: 'Task Create', group: 'Task' }, { id: 'task_edit', label: 'Task Edit', group: 'Task' }, { id: 'task_delete', label: 'Task Delete', group: 'Task' },
