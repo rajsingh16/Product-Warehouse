@@ -33,8 +33,8 @@ export interface ProjectFile {
   size: number;
   uploadedBy: string;
   uploadedAt: string;
-  content?: string;
-  blobUrl?: string;
+  //content?: string;
+  //blobUrl?: string;
 }
 
 export interface Folder {
@@ -42,6 +42,8 @@ export interface Folder {
   name: string;
   files: ProjectFile[];
   folders?: Folder[];
+  parentFolderId?: string | null;
+  fileCount?: number;
 }
 
 export interface Project {

@@ -3,6 +3,9 @@ import { authenticateRequest } from '../middleware/auth.js';
 import { requireAdministrator, requireAnyPermission, requirePermission } from '../middleware/authorization.js';
 import { asyncHandler } from '../utils/http.js';
 import { permissionsController, projectsController, taskMasterController, tasksController, usersController } from '../controllers/controllers.js';
+import { filesController } from '../controllers/filesController.js';
+import { foldersController } from '../controllers/foldersController.js';
+import multer from 'multer';
 
 const router = Router();
 router.use(authenticateRequest);
@@ -43,4 +46,61 @@ router.post('/tasks/:id/users', requirePermission('user_assign'), asyncHandler(t
 router.put('/tasks/:id/users/:userId', requirePermission('user_assign'), asyncHandler(tasksController.updateAssignment));
 router.delete('/tasks/:id/users/:userId', requirePermission('user_assign'), asyncHandler(tasksController.unassign));
 
+
+
+// =========================
+// PROJECT FOLDER ROUTES
+// =========================
+
+router.get(
+  '/projects/:projectId/folders',
+  requirePermission('document_view'),
+  asyncHandler(foldersController.list)
+);
+
+router.post(
+  '/projects/:projectId/folders',
+  requirePermission('document_upload'),
+  asyncHandler(foldersController.create)
+);
+
+router.delete(
+  '/projects/:projectId/folders/:folderId',
+  requirePermission('document_delete'),
+  asyncHandler(foldersController.remove)
+);
+
+
+// =========================
+// PROJECT FILE ROUTES
+// =========================
+
+router.get(
+  '/projects/:projectId/folders/:folderId/files',
+  requirePermission('document_view'),
+  asyncHandler(filesController.list)
+);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+});
+
+router.post(
+  '/projects/:projectId/folders/:folderId/files',
+  requirePermission('document_upload'),
+  upload.single('file'),
+  asyncHandler(filesController.upload)
+);
+
+router.get(
+  '/files/:id',
+  requirePermission('document_view'),
+  asyncHandler(filesController.download)
+);
+
+router.delete(
+  '/files/:id',
+  requirePermission('document_delete'),
+  asyncHandler(filesController.remove)
+);
 export default router;

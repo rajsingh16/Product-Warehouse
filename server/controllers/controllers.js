@@ -1,5 +1,6 @@
 import { permissionsRepository, projectsRepository, taskMasterRepository, tasksRepository, usersRepository } from '../repositories/repository.js';
 import { HttpError, paginatedResponse, parsePagination, permissionList, requiredString, optionalString } from '../utils/http.js';
+import { foldersController } from './foldersController.js';
 
 const allowedPermissions = new Set([
   'project_view', 'project_create','project_delete',
@@ -54,8 +55,23 @@ export const usersController = {
     res.json({ success: true, data: user });
   },
   async create(req, res) {
-    const user = await usersRepository.create(bodyUser(req.body));
-    res.status(201).json({ success: true, data: user });
+    const project = await projectsRepository.create(
+      bodyProject(req.body)
+    );
+  
+    const folders =
+      await foldersController.ensureDefaultFolders(
+        project.project_id,
+        req.user.user_id
+      );
+  
+    res.status(201).json({
+      success: true,
+      data: {
+        ...project,
+        folders,
+      },
+    });
   },
   async update(req, res) {
     const user = await usersRepository.update(requiredString(req.params.id, 'id'), bodyUser(req.body, req.params.id));

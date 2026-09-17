@@ -1,5 +1,7 @@
 import { Folder } from 'lucide-react';
+
 import { Link } from 'react-router-dom';
+
 import type { Folder as FolderType } from '../../types';
 
 interface FolderCardProps {
@@ -7,7 +9,10 @@ interface FolderCardProps {
   folder: FolderType;
 }
 
-export function FolderCard({ projectId, folder }: FolderCardProps) {
+export function FolderCard({
+  projectId,
+  folder,
+}: FolderCardProps) {
   return (
     <Link
       to={`/projects/${projectId}/${folder.id}`}
@@ -20,7 +25,7 @@ export function FolderCard({ projectId, folder }: FolderCardProps) {
       </span>
 
       <span className="mt-1 text-xs text-slate-500">
-        {folder.files.length} files • {(folder.folders ?? []).length} folders
+        {folder.fileCount} files • {(folder.folders ?? []).length} folders
       </span>
     </Link>
   );

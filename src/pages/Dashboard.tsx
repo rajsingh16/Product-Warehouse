@@ -7,6 +7,17 @@ import { projectService } from '../services/projectService';
 import { employeeService } from '../services/employeeService';
 import type { Project } from '../types';
 
+function countFilesInFolders(folders: Project['folders']): number {
+  return folders.reduce((total, folder) => {
+    const directFiles = folder.fileCount ?? 0;
+
+    const childFiles = folder.folders
+      ? countFilesInFolders(folder.folders)
+      : 0;
+
+    return total + directFiles + childFiles;
+  }, 0);
+}
 export function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +26,13 @@ export function Dashboard() {
 
   useEffect(() => {
     Promise.all([projectService.getProjects(), employeeService.getEmployees()]).then(([data, employees]) => {
-      setProjects(data); setTotalEmployees(employees.length); setTotalFiles(projectService.getTotalFileCount()); setLoading(false);
+      setProjects(data); 
+      setTotalEmployees(employees.length); 
+      const fileCount = data.reduce((total, project) => {
+        return total + countFilesInFolders(project.folders);
+      }, 0);
+      setTotalFiles(fileCount);
+      setLoading(false);
     });
   }, []);
 
