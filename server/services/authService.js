@@ -23,19 +23,21 @@ function newOtp() { return String(crypto.randomInt(0, 1000000)).padStart(6, '0')
 
 export async function beginLogin(userId, password) {
   const result = await pool.query(
-    `SELECT
-       u.*,
-       COALESCE(
-         array_agg(up.permission_code)
-         FILTER (WHERE up.permission_code IS NOT NULL),
-         '{}'
-       ) permissions
-     FROM users u
-     LEFT JOIN user_permissions up
-       ON up.user_id = u.user_id
-     WHERE u.user_id = $1
-        OR u.emp_id = $1
-     GROUP BY u.user_id`,
+    `
+    SELECT
+      u.*,
+      COALESCE(
+        array_agg(up.permission_code)
+        FILTER (WHERE up.permission_code IS NOT NULL),
+        '{}'
+      ) AS permissions
+    FROM users u
+    LEFT JOIN user_permissions up
+      ON up.user_id = u.user_id
+    WHERE u.user_id = $1
+       OR u.emp_id = $1
+    GROUP BY u.user_id
+    `,
     [userId]
   );
 
@@ -49,10 +51,73 @@ export async function beginLogin(userId, password) {
     throw new HttpError(401, generic);
   }
 
-  // Create ONE new session ID
+  /*
+   * Do NOT create a new session yet.
+   *
+   * First check whether this account already
+   * has an active session.
+   */
+  if (user.active_session_id) {
+    return {
+      requiresSessionConfirmation: true,
+      message:
+        'This account is already logged in from another session.',
+      user: publicUser(user),
+    };
+  }
+
+  /*
+   * No existing session → create one.
+   */
   const sessionId = crypto.randomUUID();
 
-  // Make this the user's active session
+  await pool.query(
+    `
+    UPDATE users
+    SET active_session_id = $1
+    WHERE user_id = $2
+    `,
+    [sessionId, user.user_id]
+  );
+
+  return {
+    requiresSessionConfirmation: false,
+    token: tokenFor(user, sessionId),
+    user: publicUser(user),
+  };
+}
+export async function replaceSession(userId, password) {
+  const result = await pool.query(
+    `
+    SELECT
+      u.*,
+      COALESCE(
+        array_agg(up.permission_code)
+        FILTER (WHERE up.permission_code IS NOT NULL),
+        '{}'
+      ) AS permissions
+    FROM users u
+    LEFT JOIN user_permissions up
+      ON up.user_id = u.user_id
+    WHERE u.user_id = $1
+       OR u.emp_id = $1
+    GROUP BY u.user_id
+    `,
+    [userId]
+  );
+
+  const user = result.rows[0];
+
+  if (
+    !user ||
+    !user.password_hash ||
+    !(await bcrypt.compare(password, user.password_hash))
+  ) {
+    throw new HttpError(401, generic);
+  }
+
+  const sessionId = crypto.randomUUID();
+
   await pool.query(
     `
     UPDATE users
@@ -66,6 +131,20 @@ export async function beginLogin(userId, password) {
     token: tokenFor(user, sessionId),
     user: publicUser(user),
   };
+}
+
+export async function logoutSession(userId, sessionId) {
+  await pool.query(
+    `
+    UPDATE users
+    SET active_session_id = NULL
+    WHERE user_id = $1
+      AND active_session_id = $2
+    `,
+    [userId, sessionId]
+  );
+
+  return { loggedOut: true };
 }
 
 export async function verifyOtp(challengeId, otp) {

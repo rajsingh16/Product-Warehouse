@@ -6,12 +6,18 @@ import { Footer } from '../components/layout/Footer';
 import { useAuth } from '../context/AuthContext';
 
 export function Login() {
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, replaceSession, isAuthenticated, isLoading, } = useAuth();
   const navigate = useNavigate();
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [sessionMessage, setSessionMessage] = useState('');
+  const [showSessionWarning, setShowSessionWarning] = useState(false);
+
+  const [pendingCredentials, setPendingCredentials] = useState<{
+    userId: string;
+    password: string;
+  } | null>(null);
 
   useEffect(() => {
     const reason = sessionStorage.getItem('pw_session_expired_reason');
@@ -31,13 +37,45 @@ export function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
+  
     const result = await login(userId, password);
+  
     if (result.success) {
       navigate('/dashboard');
+    } else if (result.requiresSessionConfirmation) {
+      setPendingCredentials({
+        userId,
+        password,
+      });
+  
+      setShowSessionWarning(true);
     } else {
       setError(result.error ?? 'Invalid User ID or Password.');
     }
+  };
+  const handleContinueSession = async () => {
+    if (!pendingCredentials) return;
+  
+    setError('');
+  
+    const result = await replaceSession(
+      pendingCredentials.userId,
+      pendingCredentials.password
+    );
+  
+    if (result.success) {
+      setShowSessionWarning(false);
+      setPendingCredentials(null);
+      navigate('/dashboard');
+    } else {
+      setError(
+        result.error ?? 'Unable to continue login.'
+      );
+    }
+  };
+  const handleCancelSession = () => {
+    setShowSessionWarning(false);
+    setPendingCredentials(null);
   };
 
   return (
@@ -94,10 +132,38 @@ export function Login() {
             Login
           </Button>
         </form>
+        {showSessionWarning && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
+            <h3 className="text-sm font-semibold text-amber-900">
+              Account Already Logged In
+            </h3>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
-          Demo: admin / admin123
-        </p>
+            <p className="mt-2 text-sm text-amber-800">
+              This account is already logged in from another session.
+              If you continue, the existing session will be logged out.
+            </p>
+
+            <div className="mt-4 flex gap-3">
+              <Button
+                type="button"
+                variant ="secondary"
+                className="flex-1"
+                onClick={handleCancelSession}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                type="button"
+                className="flex-1"
+                isLoading={isLoading}
+                onClick={handleContinueSession}
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        )}
         </div>
       </div>
       <Footer />

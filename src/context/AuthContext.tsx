@@ -7,10 +7,15 @@ interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (userId: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (userId: string, password: string) => Promise<{ success: boolean; error?: string;requiresSessionConfirmation?: boolean; }>;
+  replaceSession: (
+    userId: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: string }>;
   verifyOTP: (otp: string) => Promise<{ success: boolean; error?: string }>;
   resendOTP: () => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -31,7 +36,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await authService.login(userId, password);
       if (!result.success) {
-        return { success: false, error: result.error };
+        return { success: false, error: result.error, 
+          requiresSessionConfirmation:
+            result.requiresSessionConfirmation ?? false, };
       }
       setUser(result.user);
       return { success: true };
@@ -39,6 +46,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   }, []);
+  const replaceSession = useCallback(
+    async (userId: string, password: string) => {
+      setIsLoading(true);
+  
+      try {
+        const result = await authService.replaceSession(
+          userId,
+          password
+        );
+  
+        if (!result.success) {
+          return {
+            success: false,
+            error: result.error,
+          };
+        }
+  
+        setUser(result.user);
+  
+        return {
+          success: true,
+        };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
 
   const verifyOTP = useCallback(async (otp: string) => {
     setIsLoading(true);
@@ -62,8 +97,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: true };
   }, []);
 
-  const logout = useCallback(() => {
-    authService.logout();
+  const logout = useCallback(async () => {
+    await authService.logout();
     setUser(null);
   }, []);
 
@@ -73,11 +108,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!user,
       isLoading,
       login,
+      replaceSession,
       verifyOTP,
       resendOTP,
       logout,
     }),
-    [user, isLoading, login, verifyOTP, resendOTP, logout],
+    [user, isLoading, login,replaceSession, verifyOTP, resendOTP, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
