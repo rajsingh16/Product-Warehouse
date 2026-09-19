@@ -9,16 +9,23 @@ const RESEND = 30 * 1000;
 const MAX_ATTEMPTS = 5;
 const generic = 'Invalid user ID or password.';
 
-function tokenFor(user, sessionId) { 
+function jwtSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new HttpError(500, 'JWT_SECRET is not configured');
+  return secret;
+}
+
+function tokenFor(user, sessionId) {
+  const secret = jwtSecret();
   const header = Buffer.from(
     JSON.stringify({ 
       alg: 'HS256', typ: 'JWT' 
     })
   ).toString('base64url'); 
   const payload = Buffer.from(
-    JSON.stringify({ sub: user.user_id,sessionId, exp: Math.floor(Date.now() / 1000) + 8 * 60 * 60 })).toString('base64url'); const signature = crypto.createHmac('sha256', process.env.JWT_SECRET).update(`${header}.${payload}`).digest('base64url'); return `${header}.${payload}.${signature}`; }
+    JSON.stringify({ sub: user.user_id,sessionId, exp: Math.floor(Date.now() / 1000) + 8 * 60 * 60 })).toString('base64url'); const signature = crypto.createHmac('sha256', secret).update(`${header}.${payload}`).digest('base64url'); return `${header}.${payload}.${signature}`; }
 function publicUser(row) { return { id: row.user_id, userId: row.user_id, employeeId: row.emp_id, name: row.user_name, email: row.email, role: row.user_type === 'Administrator' ? 'Administrator' : 'Employee', userType: row.user_type, whatsappLastDigits: row.mobile?.slice(-2) ?? '', permissions: row.permissions ?? [] }; }
-function otpHash(otp) { return crypto.createHash('sha256').update(`${otp}:${process.env.JWT_SECRET}`).digest('hex'); }
+function otpHash(otp) { return crypto.createHash('sha256').update(`${otp}:${jwtSecret()}`).digest('hex'); }
 function newOtp() { return String(crypto.randomInt(0, 1000000)).padStart(6, '0'); }
 
 export async function beginLogin(userId, password) {
