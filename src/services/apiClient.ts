@@ -1,21 +1,7 @@
-import type { AuthUser } from '../types';
-
 const API_URL = (
   import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? 'http://localhost:3001' : '')
 ).replace(/\/$/, '');
-
-function currentUser(): AuthUser | null {
-  const raw = localStorage.getItem('pw_auth');
-
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw) as AuthUser;
-  } catch {
-    return null;
-  }
-}
 
 export async function apiRequest<T>(
   path: string,
@@ -49,15 +35,6 @@ export async function apiRequest<T>(
       'Authorization',
       `Bearer ${token}`
     );
-  } else if (import.meta.env.DEV) {
-    const user = currentUser();
-
-    if (user?.employeeId) {
-      headers.set(
-        'x-user-id',
-        user.employeeId
-      );
-    }
   }
 
   const response = await fetch(

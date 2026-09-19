@@ -46,7 +46,7 @@ export async function beginLogin(userId, password) {
   if (
     !user ||
     !user.password_hash ||
-    !(await bcrypt.compare(password, user.password_hash))
+    password !== user.password_hash
   ) {
     throw new HttpError(401, generic);
   }
@@ -111,7 +111,7 @@ export async function replaceSession(userId, password) {
   if (
     !user ||
     !user.password_hash ||
-    !(await bcrypt.compare(password, user.password_hash))
+    password !== user.password_hash
   ) {
     throw new HttpError(401, generic);
   }

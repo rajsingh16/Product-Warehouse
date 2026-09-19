@@ -10,10 +10,6 @@ export interface AuthUser {
   permissions?: RoleId[];
 }
 
-export interface MockUser extends AuthUser {
-  password: string;
-}
-
 export interface Employee {
   id: string;
   name: string;

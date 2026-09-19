@@ -43,9 +43,6 @@ export async function authenticateRequest(req, _res, next) {
       userId =verified.userId;
       sessionId= verified.sessionId;
 
-    } else if (process.env.NODE_ENV !== 'production' && req.get('x-user-id')) {
-      // Development-only bridge until the existing frontend auth flow is API-backed.
-      userId = req.get('x-user-id').trim();
     } else {
       throw new HttpError(401, 'Authentication required');
     }

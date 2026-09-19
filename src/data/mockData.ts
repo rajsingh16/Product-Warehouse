@@ -1,39 +1,4 @@
-import type { Employee, MockUser, Project, ProjectFile, RoleDefinition, RoleId, Task, UserRoleAssignment, RoleName } from '../types';
-
-export const DEMO_OTP = '123456';
-
-export const mockUsers: MockUser[] = [
-  {
-    id: 'user-1',
-    userId: 'admin',
-    password: 'admin123',
-    name: 'Raj Singh',
-    role: 'Administrator',
-    email: 'raj.singh@projectwarehouse.com',
-    employeeId: 'EMP001',
-    whatsappLastDigits: '45',
-  },
-  {
-    id: 'user-2',
-    userId: 'john',
-    password: 'john123',
-    name: 'John Doe',
-    role: 'Project Manager',
-    email: 'john.doe@projectwarehouse.com',
-    employeeId: 'EMP002',
-    whatsappLastDigits: '78',
-  },
-  {
-    id: 'user-3',
-    userId: 'sarah',
-    password: 'sarah123',
-    name: 'Sarah Smith',
-    role: 'Manager',
-    email: 'sarah.smith@projectwarehouse.com',
-    employeeId: 'EMP003',
-    whatsappLastDigits: '92',
-  },
-];
+import type { Employee, Project, ProjectFile, RoleDefinition, RoleId, Task, UserRoleAssignment, RoleName } from '../types';
 
 export const mockEmployees: Employee[] = [
   {
