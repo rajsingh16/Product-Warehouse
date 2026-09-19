@@ -8,7 +8,14 @@
     "start": "node server.js",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "create-all-tables": "node create-all-tables.js"
+    "a": "node a.js",
+    "b": "node b.js",
+    "c": "node c.js",
+    "d": "node d.js",
+    "e": "node e.js",
+    "f": "node f.js",
+    "h": "node h.js",
+    "i": "node i.js"
   },
   
   "devDependencies": {
