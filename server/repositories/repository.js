@@ -32,6 +32,7 @@ export const usersRepository = {
     );
     return { rows: result.rows, total: count.rows[0].total };
   },
+
   async get(id) {
     const result = await pool.query(
       `SELECT u.user_id, u.emp_id, u.user_name, u.mobile, u.email, u.date_of_joining, u.user_type,
@@ -41,33 +42,84 @@ export const usersRepository = {
     );
     return result.rows[0] ?? null;
   },
+
   async create(user) {
     const result = await pool.query(
-      `INSERT INTO users (user_id, emp_id, user_name, mobile, email, date_of_joining, user_type, password_hash)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING user_id, emp_id, user_name, mobile, email, user_type`,
-      [user.userId, user.empId, user.userName, user.mobile, user.email, user.userType, user.passwordHash,],
+      `INSERT INTO users (
+         user_id,
+         user_name,
+         mobile,
+         email,
+         date_of_joining,
+         user_type,
+         password_hash
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING
+         user_id,
+         emp_id,
+         user_name,
+         mobile,
+         email,
+         date_of_joining,
+         user_type`,
+      [
+        user.userId,
+        user.userName,
+        user.mobile,
+        user.email,
+        user.dateOfJoining,
+        user.userType,
+        user.passwordHash,
+      ],
     );
+  
     return result.rows[0];
   },
+
   async update(id, user) {
     const result = await pool.query(
-      `UPDATE users SET emp_id = $2, user_name = $3, mobile = $4, email = $5,date_of_joining = $6, user_type = $7,
-                       password_hash = COALESCE($8, password_hash)
+      `UPDATE users
+          SET user_name = $2,
+              mobile = $3,
+              email = $4,
+              date_of_joining = $5,
+              user_type = $6,
+              password_hash = COALESCE($7, password_hash)
         WHERE user_id = $1
-        RETURNING user_id, emp_id, user_name, mobile, email, date_of_joining, user_type`,
-      [id, user.empId, user.userName, user.mobile, user.email, user.dateOfJoining, user.userType, user.passwordHash],
+        RETURNING
+          user_id,
+          emp_id,
+          user_name,
+          mobile,
+          email,
+          date_of_joining,
+          user_type`,
+      [
+        id,
+        user.userName,
+        user.mobile,
+        user.email,
+        user.dateOfJoining,
+        user.userType,
+        user.passwordHash,
+      ],
     );
+
     return result.rows[0] ?? null;
   },
+
+
   async remove(id) {
     const result = await pool.query('DELETE FROM users WHERE user_id = $1', [id]);
     return result.rowCount > 0;
   },
+
   async permissions(id) {
     const result = await pool.query('SELECT permission_code FROM user_permissions WHERE user_id = $1 ORDER BY permission_code', [id]);
     return result.rows.map((row) => row.permission_code);
   },
+
   async replacePermissions(id, permissions) {
     const client = await pool.connect();
     try {

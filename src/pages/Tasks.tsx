@@ -257,9 +257,9 @@ projectService.getProjects(),
 
       {loadError && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{loadError}</div>}
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="overflow-x-auto">
+        <div className="h-[500px] overflow-y-auto overflow-x-auto">
           <table className="w-full min-w-[1100px] text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50">
+            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
               <tr>{['Actions', 'Project', 'Select Task', 'Description', 'Assigned To', 'Assigned On', 'Reference Link', 'Comments', 'Status'].map((column) => <th key={column} className="px-4 py-3 font-medium text-slate-600">{column}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-slate-200">

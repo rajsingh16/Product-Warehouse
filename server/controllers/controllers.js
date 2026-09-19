@@ -25,7 +25,8 @@ function bodyUser(body, id = body.userId) {
   const isUpdate = Boolean(id) && id !== body.userId;
   return {
     userId: requiredString(id, 'userId'),
-    empId: requiredString(body.empId, 'empId'),
+    // Made optional: preserves incoming empId if provided (e.g. during updates), otherwise stays undefined
+    empId: optionalString(body.empId, 'empId'),
     userName: requiredString(body.userName, 'userName'),
     mobile: optionalString(body.mobile, 'mobile'),
     email: requiredString(body.email, 'email'),
@@ -34,17 +35,15 @@ function bodyUser(body, id = body.userId) {
       ? body.userType
       : (() => { throw new HttpError(400, 'userType must be Administrator or User'); })(),
     // On create: required. On update: optional — omitted/blank means "keep current".
-    password: body.password ? validatedPassword(body.password) : 
-    undefined,
-    //(isUpdate ? undefined : validatedPassword(body.password)),
-
+    password: body.password ? validatedPassword(body.password) : undefined,
   };
 }
 
 function bodyCreateUser(body) {
   return {
     userId: requiredString(body.userId, 'userId'),
-    empId: requiredString(body.empId, 'empId'),
+    // Made optional: if body.empId is omitted/empty, it evaluates to undefined, allowing PostgreSQL to assign the default sequence
+    empId: optionalString(body.empId, 'empId'),
     userName: requiredString(body.userName, 'userName'),
     mobile: optionalString(body.mobile, 'mobile'),
     email: requiredString(body.email, 'email'),

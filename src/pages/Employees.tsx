@@ -115,7 +115,6 @@ export function Employees() {
       email: employee.email,
       dateOfJoining: employee.dateOfJoining,
       status: employee.status,
-      // Never prefill an existing password — blank means "leave unchanged".
       password: '',
       confirmPassword: '',
     });
@@ -126,7 +125,6 @@ export function Employees() {
 
   const closeModal = () => {
     setModalOpen(false);
-    // Clear credentials from memory as soon as the modal is dismissed.
     setForm(emptyForm);
     setShowPassword(false);
   };
@@ -135,7 +133,7 @@ export function Employees() {
     event.preventDefault();
     setError('');
 
-    if (!form.employeeId || !form.name || !form.mobileNumber || !form.email || !form.dateOfJoining) {
+    if (!form.name || !form.mobileNumber || !form.email || !form.dateOfJoining) {
       setError('All fields are required.');
       return;
     }
@@ -153,15 +151,14 @@ export function Employees() {
       }
     }
 
-    // confirmPassword is a UI-only field and is never sent to the API.
     const { confirmPassword: _confirmPassword, password, ...details } = form;
 
     try {
       if (editing) {
-        // Only include the password when the user actually typed a new one.
-        await employeeService.updateEmployee(editing.id, password ? { ...details, password } : details);
+        await employeeService.updateEmployee(editing.id, password ? { ...details, password } : { ...details });
         showToast(password ? 'Employee updated and password changed.' : 'Employee updated successfully.');
       } else {
+        // Send payload without employeeId so PostgreSQL generates the sequence value
         await employeeService.createEmployee({ ...details, password });
         showToast('Employee created successfully.');
       }
@@ -227,41 +224,91 @@ export function Employees() {
 
       {loadError && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{loadError}</div>}
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="overflow-x-auto">
+        <div className="max-h-[460px] overflow-auto">
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50">
               <tr>
                 {['Actions', 'Emp ID', 'Name', 'Mobile Number', 'Email', 'Date of Joining', 'Status'].map((column) => (
-                  <th key={column} className="px-4 py-3 font-medium text-slate-600">{column}</th>
-                ))}
+              <th
+                key={column}
+                className="px-4 py-3 font-medium text-slate-600"
+              >
+                {column}
+              </th>
+              ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
-              {paginatedEmployees.map((employee) => (
-                <tr key={employee.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      {can(user, 'employees:edit') && <Button variant="ghost" size="sm" onClick={() => openEdit(employee)}><Pencil className="h-4 w-4" />Edit</Button>}
-                      {can(user, 'employees:delete') && <Button variant="ghost" size="sm" onClick={() => setDeleting(employee)}><Trash2 className="h-4 w-4 text-red-600" /></Button>}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{employee.employeeId}</td>
-                  <td className="px-4 py-3 font-medium text-slate-900">{employee.name}</td>
-                  <td className="px-4 py-3 text-slate-600">{employee.mobileNumber}</td>
-                  <td className="px-4 py-3 text-slate-600">{employee.email}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatDate(employee.dateOfJoining)}</td>
-                  <td className="px-4 py-3"><StatusBadge status={employee.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+
+      <tbody className="divide-y divide-slate-200">
+        {paginatedEmployees.map((employee) => (
+          <tr key={employee.id} className="hover:bg-slate-50">
+            <td className="px-4 py-3">
+              <div className="flex gap-2">
+                {can(user, 'employees:edit') && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEdit(employee)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </Button>
+                )}
+
+                {can(user, 'employees:delete') && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDeleting(employee)}
+                  >
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                  </Button>
+                )}
+              </div>
+            </td>
+
+            <td className="px-4 py-3 text-slate-600">
+              {employee.employeeId}
+            </td>
+
+            <td className="px-4 py-3 font-medium text-slate-900">
+              {employee.name}
+            </td>
+
+            <td className="px-4 py-3 text-slate-600">
+              {employee.mobileNumber}
+            </td>
+
+            <td className="px-4 py-3 text-slate-600">
+              {employee.email}
+            </td>
+
+            <td className="px-4 py-3 text-slate-600">
+              {formatDate(employee.dateOfJoining)}
+            </td>
+
+            <td className="px-4 py-3">
+              <StatusBadge status={employee.status} />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
 
       <Pagination page={page} pageSize={pageSize} total={visibleEmployees.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
       <Modal isOpen={modalOpen} onClose={closeModal} title={editing ? 'Edit Employee' : 'New Employee'} size="lg">
         <form onSubmit={saveEmployee} className="grid gap-4 sm:grid-cols-2">
-          <input value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} placeholder="Employee ID" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
+          {/* Only rendered when editing an existing employee */}
+          {editing && (
+            <input
+              value={form.employeeId}
+              disabled
+              placeholder="Employee ID"
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm bg-slate-100 cursor-not-allowed text-slate-500"
+            />
+          )}
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Name" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
           <input value={form.mobileNumber} onChange={(e) => setForm({ ...form, mobileNumber: e.target.value })} placeholder="Mobile Number" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
           <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
@@ -271,52 +318,48 @@ export function Employees() {
             <option value="inactive">Inactive</option>
           </select>
 
-          {!editing &&(
+          {!editing && (
             <>
-            <div className="sm:col-span-2 border-t border-slate-200 pt-4">
-            <h3 className="text-sm font-semibold text-slate-900">
-              {editing ? 'Change Password' : 'Set Password'}
-            </h3>
-            <p className="mt-1 text-xs text-slate-500">
-              {editing
-                ? 'Leave both fields blank to keep the current password.'
-                : `Minimum ${MIN_PASSWORD_LENGTH} characters.`}
-            </p>
-          </div>
+              <div className="sm:col-span-2 border-t border-slate-200 pt-4">
+                <h3 className="text-sm font-semibold text-slate-900">Set Password</h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Minimum {MIN_PASSWORD_LENGTH} characters.
+                </p>
+              </div>
 
-          <div className="relative">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder={editing ? 'New Password' : 'Password'}
-              autoComplete="new-password"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 pr-10 text-sm"
-            />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  placeholder="Password"
+                  autoComplete="new-password"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 pr-10 text-sm"
+                />
 
-            <button
-              type="button"
-              onClick={() => setShowPassword((visible) => !visible)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
-         </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
 
-         <input
-            type={showPassword ? 'text' : 'password'}
-            value={form.confirmPassword}
-            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-            placeholder="Confirm Password"
-            autoComplete="new-password"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-          </>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={form.confirmPassword}
+                onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                placeholder="Confirm Password"
+                autoComplete="new-password"
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+              />
+            </>
           )}
           {error && <p className="sm:col-span-2 text-sm text-red-600">{error}</p>}
           <div className="flex gap-3 sm:col-span-2">

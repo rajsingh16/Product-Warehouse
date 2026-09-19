@@ -76,6 +76,7 @@ export function Projects() {
 
   return (
     <Layout breadcrumbs={[{ label: 'Projects', path: '/projects' }]}>
+
       <div className="mb-6 flex flex-col gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Projects</h1>
@@ -99,7 +100,26 @@ export function Projects() {
       ) : loadError ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">{loadError}</div>
       ) : (
-        <><ProjectTable projects={visibleProjects} onEdit={can(user, 'projects:edit') ? setEditProject : undefined} onDelete={can(user, 'projects:delete') ? setDeleteProject : undefined} /><Pagination page={page} pageSize={pageSize} total={projects.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} /></>
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+  <div className="max-h-[460px] overflow-auto">
+    <ProjectTable
+      projects={visibleProjects}
+      onEdit={can(user, 'projects:edit') ? setEditProject : undefined}
+      onDelete={can(user, 'projects:delete') ? setDeleteProject : undefined}
+    />
+  </div>
+
+  <Pagination
+    page={page}
+    pageSize={pageSize}
+    total={visibleProjects.length}
+    onPageChange={setPage}
+    onPageSizeChange={(size) => {
+      setPageSize(size);
+      setPage(1);
+    }}
+  />
+</div>
       )}
 
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="New Project" size="lg">

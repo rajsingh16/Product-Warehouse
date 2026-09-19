@@ -11,17 +11,43 @@ export function EmployeeDetails() {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!employeeId) return;
-    Promise.all([
-      employeeService.getEmployee(employeeId),
-      projectService.getProjects(),
-    ]).then(([emp, projs]) => {
-      setEmployee(emp);
-      setProjects(projs);
-      setLoading(false);
-    });
+
+    let isMounted = true;
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [emp, projs] = await Promise.all([
+          employeeService.getEmployee(employeeId),
+          projectService.getProjects(),
+        ]);
+
+        if (isMounted) {
+          setEmployee(emp);
+          setProjects(projs || []);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load employee details.');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [employeeId]);
 
   if (loading) {
@@ -34,11 +60,11 @@ export function EmployeeDetails() {
     );
   }
 
-  if (!employee) {
+  if (error || !employee) {
     return (
       <Layout breadcrumbs={[{ label: 'Employees', path: '/employees' }]}>
         <div className="rounded-lg border border-slate-200 bg-white p-12 text-center">
-          <p className="text-slate-500">Employee not found.</p>
+          <p className="text-slate-500">{error || 'Employee not found.'}</p>
           <Link to="/employees" className="mt-4 inline-block text-sm text-slate-700 hover:underline">
             Back to Employees
           </Link>
@@ -47,9 +73,15 @@ export function EmployeeDetails() {
     );
   }
 
-  const assignedProjects = projects.filter((p) => p.assignedEmployeeIds.includes(employee.id) || p.assignedEmployeeIds.includes(employee.employeeId));
+  const assignedProjects = projects.filter(
+    (p) =>
+      p.assignedEmployeeIds?.includes(employee.id) ||
+      p.assignedEmployeeIds?.includes(employee.employeeId)
+  );
+
   const initials = employee.name
     .split(' ')
+    .filter(Boolean)
     .map((n) => n[0])
     .join('')
     .slice(0, 2)
@@ -65,11 +97,11 @@ export function EmployeeDetails() {
       <div className="max-w-2xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-start gap-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-700 text-lg font-semibold text-white">
-            {initials}
+            {initials || 'EM'}
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-slate-900">{employee.name}</h1>
-            <p className="text-sm text-slate-500">{employee.role}</p>
+            {employee.role && <p className="text-sm text-slate-500">{employee.role}</p>}
             <span
               className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                 employee.status === 'active'

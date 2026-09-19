@@ -3,7 +3,6 @@ import type { Employee, RoleName } from '../types';
 
 type ApiUser = { user_id: string; emp_id: string; user_name: string; mobile: string | null; email: string; date_of_joining: string | null; user_type: 'Administrator' | 'User'; permissions?: string[] };
 type CreateEmployeeInput = {
-  employeeId: string;
   name: string;
   mobileNumber: string;
   email: string;
@@ -19,7 +18,21 @@ function mapUser(user: ApiUser): Employee { return { id: user.user_id, employeeI
 
 export const employeeService = {
   async getEmployees() { return (await apiRequest<ApiUser[]>('/api/users?page=1&pageSize=100')).map(mapUser); },
-  async getEmployee(id: string) { try { return mapUser(await apiRequest<ApiUser>(`/api/users/${encodeURIComponent(id)}`)); } catch (error) { if (error instanceof Error && error.message === 'User not found') return null; throw error; } },
+  async getEmployee(id: string) {
+  try {
+    const user = await apiRequest<ApiUser>(`/api/users/${encodeURIComponent(id)}`);
+    return mapUser(user);
+  } catch (error: any) {
+    // Check for HTTP 404 or typical API error formats
+    if (
+      error?.status === 404 || 
+      error?.message?.toLowerCase().includes('not found')
+    ) {
+      return null;
+    }
+    throw error;
+  }
+},
   async searchEmployees(query: string) { return (await apiRequest<ApiUser[]>(`/api/users${queryString({ search: query, page: 1, pageSize: 25 })}`)).map(mapUser); },
   async createEmployee(input: CreateEmployeeInput) {
     const user = await apiRequest<ApiUser>(
@@ -28,7 +41,7 @@ export const employeeService = {
         method: 'POST',
         body: JSON.stringify({
           userId: `user-${Date.now()}`,
-          empId: input.employeeId,
+          //empId: input.employeeId ?? `EMP-${Date.now()}`,
           userName: input.name,
           mobile: input.mobileNumber,
           email: input.email,
@@ -42,33 +55,27 @@ export const employeeService = {
     return mapUser(user);
   },
   
-  async updateEmployee(
-    id: string,
-    input: UpdateEmployeeInput
-  ) {
+  async updateEmployee(id: string, input: UpdateEmployeeInput) {
     const current = await apiRequest<ApiUser>(
       `/api/users/${encodeURIComponent(id)}`
     );
   
-    const body: Record<string, unknown> = {
+    const body = {
       userId: id,
       empId: input.employeeId ?? current.emp_id,
       userName: input.name ?? current.user_name,
       mobile: input.mobileNumber ?? current.mobile,
       email: input.email ?? current.email,
-      dateOfJoining:
-        input.dateOfJoining ?? current.date_of_joining,
+      dateOfJoining: input.dateOfJoining ?? current.date_of_joining,
       userType: current.user_type,
+      ...(input.password && { password: input.password }),
     };
-  
-    if (input.password) {
-      body.password = input.password;
-    }
   
     const user = await apiRequest<ApiUser>(
       `/api/users/${encodeURIComponent(id)}`,
       {
         method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       }
     );
