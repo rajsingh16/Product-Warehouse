@@ -145,28 +145,114 @@ export const usersController = {
 export const projectsController = {
   async list(req, res) {
     const { page, pageSize, offset } = parsePagination(req.query);
-    const result = await projectsRepository.list({ search: optionalString(req.query.search, 'search'), status: optionalString(req.query.status, 'status'), pageSize, offset });
-    paginatedResponse(res, result.rows, page, pageSize, result.total);
+
+    const assignedTo =
+      req.user.user_type === 'Administrator'
+        ? undefined
+        : req.user.user_id;
+
+    const result = await projectsRepository.list({
+      search: optionalString(req.query.search, 'search'),
+      status: optionalString(req.query.status, 'status'),
+      assignedTo,
+      pageSize,
+      offset,
+    });
+
+    paginatedResponse(
+      res,
+      result.rows,
+      page,
+      pageSize,
+      result.total
+    );
   },
+
   async get(req, res) {
-    const project = await projectsRepository.get(requiredString(req.params.id, 'id'));
-    if (!project) throw new HttpError(404, 'Project not found');
-    res.json({ success: true, data: project });
+    const assignedTo =
+      req.user.user_type === 'Administrator'
+        ? undefined
+        : req.user.user_id;
+
+    const project = await projectsRepository.get(
+      requiredString(req.params.id, 'id'),
+      assignedTo
+    );
+
+    if (!project) {
+      throw new HttpError(404, 'Project not found');
+    }
+
+    res.json({
+      success: true,
+      data: project,
+    });
   },
-  async create(req, res) { res.status(201).json({ success: true, data: await projectsRepository.create(bodyProject(req.body)) }); },
+
+  async create(req, res) {
+    res.status(201).json({
+      success: true,
+      data: await projectsRepository.create(bodyProject(req.body)),
+    });
+  },
+
   async update(req, res) {
-    const project = await projectsRepository.update(req.params.id, bodyProject(req.body, req.params.id));
-    if (!project) throw new HttpError(404, 'Project not found');
-    res.json({ success: true, data: project });
+    const project = await projectsRepository.update(
+      req.params.id,
+      bodyProject(req.body, req.params.id)
+    );
+
+    if (!project) {
+      throw new HttpError(404, 'Project not found');
+    }
+
+    res.json({
+      success: true,
+      data: project,
+    });
   },
+
   async remove(req, res) {
-    if (!(await projectsRepository.remove(requiredString(req.params.id, 'id')))) throw new HttpError(404, 'Project not found');
+    if (
+      !(await projectsRepository.remove(
+        requiredString(req.params.id, 'id')
+      ))
+    ) {
+      throw new HttpError(404, 'Project not found');
+    }
+
     res.status(204).send();
   },
-  async assignments(req, res) { res.json({ success: true, data: await projectsRepository.assignments(requiredString(req.params.id, 'id')) }); },
-  async assign(req, res) { res.status(201).json({ success: true, data: await projectsRepository.assign(req.params.id, requiredString(req.body.userId, 'userId')) }); },
+
+  async assignments(req, res) {
+    res.json({
+      success: true,
+      data: await projectsRepository.assignments(
+        requiredString(req.params.id, 'id')
+      ),
+    });
+  },
+
+  async assign(req, res) {
+    res.status(201).json({
+      success: true,
+      data: await projectsRepository.assign(
+        req.params.id,
+        requiredString(req.body.userId, 'userId')
+      ),
+    });
+  },
+
   async unassign(req, res) {
-    if (!(await projectsRepository.unassign(req.params.id, requiredString(req.params.userId, 'userId')))) throw new HttpError(404, 'Project assignment not found');
+    if (
+      !(await projectsRepository.unassign(
+        req.params.id,
+        requiredString(req.body.userId, 'userId')
+      ))
+    ) {
+      throw new HttpError(404, 'Project assignment not found');
+    }
+
     res.status(204).send();
   },
 };

@@ -88,30 +88,159 @@ export const usersRepository = {
 };
 
 export const projectsRepository = {
-  async list({ search, status, pageSize, offset }) {
+  async list({
+    search,
+    status,
+    assignedTo,
+    pageSize,
+    offset
+  }) {
     const values = [];
     const filters = [];
-    if (search) { values.push(`%${search}%`); filters.push(`p.project_name ILIKE $${values.length}`); }
-    if (status) { values.push(status); filters.push(`p.project_status = $${values.length}`); }
-    const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
-    const count = await pool.query(`SELECT COUNT(*)::int AS total FROM projects p ${where}`, values);
+  
+    if (search) {
+      values.push(`%${search}%`);
+      filters.push(
+        `p.project_name ILIKE $${values.length}`
+      );
+    }
+  
+    if (status) {
+      values.push(status);
+      filters.push(
+        `p.project_status = $${values.length}`
+      );
+    }
+  
+    if (assignedTo) {
+      values.push(assignedTo);
+  
+      filters.push(`
+        EXISTS (
+          SELECT 1
+          FROM project_user_mapping pum
+          WHERE pum.project_id = p.project_id
+            AND pum.user_id = $${values.length}
+        )
+      `);
+    }
+  
+    const where = filters.length
+      ? `WHERE ${filters.join(' AND ')}`
+      : '';
+  
+    const count = await pool.query(
+      `
+      SELECT COUNT(*)::int AS total
+      FROM projects p
+      ${where}
+      `,
+      values
+    );
+  
     values.push(pageSize, offset);
+  
     const result = await pool.query(
-      `SELECT p.project_id, p.project_name, p.project_status, p.created_at,
-              COALESCE(json_agg(json_build_object('userId', m.user_id, 'userName', u.user_name, 'empId', u.emp_id, 'assignedOn', m.assigned_on)) FILTER (WHERE m.user_id IS NOT NULL), '[]') AS users
-         FROM projects p LEFT JOIN project_user_mapping m ON m.project_id = p.project_id LEFT JOIN users u ON u.user_id = m.user_id
-        ${where} GROUP BY p.project_id ORDER BY p.created_at DESC LIMIT $${values.length - 1} OFFSET $${values.length}`,
-      values,
+      `
+      SELECT
+        p.project_id,
+        p.project_name,
+        p.project_status,
+        p.created_at,
+  
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'userId', m.user_id,
+              'userName', u.user_name,
+              'empId', u.emp_id,
+              'assignedOn', m.assigned_on
+            )
+          )
+          FILTER (WHERE m.user_id IS NOT NULL),
+          '[]'
+        ) AS users
+  
+      FROM projects p
+  
+      LEFT JOIN project_user_mapping m
+        ON m.project_id = p.project_id
+  
+      LEFT JOIN users u
+        ON u.user_id = m.user_id
+  
+      ${where}
+  
+      GROUP BY p.project_id
+  
+      ORDER BY p.created_at DESC
+  
+      LIMIT $${values.length - 1}
+      OFFSET $${values.length}
+      `,
+      values
     );
-    return { rows: result.rows, total: count.rows[0].total };
+  
+    return {
+      rows: result.rows,
+      total: count.rows[0].total
+    };
   },
-  async get(id) {
+  async get(id, assignedTo) {
+    const values = [id];
+  
+    let assignedFilter = '';
+  
+    if (assignedTo) {
+      values.push(assignedTo);
+  
+      assignedFilter = `
+        AND EXISTS (
+          SELECT 1
+          FROM project_user_mapping pum
+          WHERE pum.project_id = p.project_id
+            AND pum.user_id = $${values.length}
+        )
+      `;
+    }
+  
     const result = await pool.query(
-      `SELECT p.project_id, p.project_name, p.project_status, p.created_at,
-              COALESCE(json_agg(json_build_object('userId', m.user_id, 'userName', u.user_name, 'empId', u.emp_id, 'assignedOn', m.assigned_on)) FILTER (WHERE m.user_id IS NOT NULL), '[]') AS users
-         FROM projects p LEFT JOIN project_user_mapping m ON m.project_id = p.project_id LEFT JOIN users u ON u.user_id = m.user_id
-        WHERE p.project_id = $1 GROUP BY p.project_id`, [id],
+      `
+      SELECT
+        p.project_id,
+        p.project_name,
+        p.project_status,
+        p.created_at,
+  
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'userId', m.user_id,
+              'userName', u.user_name,
+              'empId', u.emp_id,
+              'assignedOn', m.assigned_on
+            )
+          )
+          FILTER (WHERE m.user_id IS NOT NULL),
+          '[]'
+        ) AS users
+  
+      FROM projects p
+  
+      LEFT JOIN project_user_mapping m
+        ON m.project_id = p.project_id
+  
+      LEFT JOIN users u
+        ON u.user_id = m.user_id
+  
+      WHERE p.project_id = $1
+      ${assignedFilter}
+  
+      GROUP BY p.project_id
+      `,
+      values
     );
+  
     return result.rows[0] ?? null;
   },
   async create(project) {
