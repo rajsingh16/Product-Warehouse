@@ -20,35 +20,7 @@ export function FilePreview({ file, onClose }: FilePreviewProps) {
   const isOffice = OFFICE_TYPES.includes(file.type);
 
   const renderContent = () => {
-    if (isImage && file.blobUrl) {
-      return (
-        <img
-          src={file.blobUrl}
-          alt={file.name}
-          className="mx-auto max-h-[60vh] rounded-md object-contain"
-        />
-      );
-    }
-
-    if (isPdf && file.blobUrl) {
-      return (
-        <iframe
-          src={file.blobUrl}
-          title={file.name}
-          className="h-[60vh] w-full rounded-md border border-slate-200"
-        />
-      );
-    }
-
-    if (isText && file.content) {
-      return (
-        <pre className="max-h-[60vh] overflow-auto rounded-md bg-slate-50 p-4 text-sm text-slate-800">
-          {file.content}
-        </pre>
-      );
-    }
-
-    if (isOffice) {
+    if (isImage || isPdf || isText || isOffice) {
       return (
         <div className="py-8 text-center">
           <p className="text-slate-600">Preview not available in prototype.</p>

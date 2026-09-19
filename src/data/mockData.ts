@@ -173,7 +173,7 @@ function createSampleFiles(prefix: string, folderName: string): ProjectFile[] {
       size: 12 * 1024,
       uploadedBy: 'John Doe',
       uploadedAt: '2026-08-20',
-      content: `Sample notes for folder ${folderName}.\nThis is mock content for preview purposes.`,
+      //content: `Sample notes for folder ${folderName}.\nThis is mock content for preview purposes.`,
     },
     {
       id: `${prefix}-${folderName}-f4`,
@@ -182,7 +182,7 @@ function createSampleFiles(prefix: string, folderName: string): ProjectFile[] {
       size: 4 * 1024,
       uploadedBy: 'Mike Johnson',
       uploadedAt: '2026-08-19',
-      content: JSON.stringify({ folder: folderName, status: 'active', version: 1 }, null, 2),
+      //content: JSON.stringify({ folder: folderName, status: 'active', version: 1 }, null, 2),
     },
   ];
 }

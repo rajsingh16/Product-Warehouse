@@ -1,4 +1,4 @@
-import { Filter, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, Filter, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../components/common/Button';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
@@ -20,6 +20,8 @@ type EmployeeFormState = {
   email: string;
   dateOfJoining: string;
   status: EmployeeStatus;
+  password: string;
+  confirmPassword: string;
 };
 
 const emptyForm: EmployeeFormState = {
@@ -29,7 +31,25 @@ const emptyForm: EmployeeFormState = {
   email: '',
   dateOfJoining: '',
   status: 'active',
+  password: '',
+  confirmPassword: '',
 };
+
+const MIN_PASSWORD_LENGTH = 8;
+
+/** Returns an error message, or '' when the password is acceptable. */
+function validatePassword(password: string, confirmPassword: string, isRequired: boolean): string {
+  if (!password && !confirmPassword) {
+    return isRequired ? 'Password is required.' : '';
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  }
+  if (password !== confirmPassword) {
+    return 'Passwords do not match.';
+  }
+  return '';
+}
 
 export function Employees() {
   const { user } = useAuth();
@@ -42,6 +62,7 @@ export function Employees() {
   const [editing, setEditing] = useState<Employee | null>(null);
   const [deleting, setDeleting] = useState<Employee | null>(null);
   const [form, setForm] = useState<EmployeeFormState>(emptyForm);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loadError, setLoadError] = useState('');
   const [page, setPage] = useState(1);
@@ -80,6 +101,7 @@ export function Employees() {
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm);
+    setShowPassword(false);
     setError('');
     setModalOpen(true);
   };
@@ -93,27 +115,57 @@ export function Employees() {
       email: employee.email,
       dateOfJoining: employee.dateOfJoining,
       status: employee.status,
+      // Never prefill an existing password — blank means "leave unchanged".
+      password: '',
+      confirmPassword: '',
     });
+    setShowPassword(false);
     setError('');
     setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    // Clear credentials from memory as soon as the modal is dismissed.
+    setForm(emptyForm);
+    setShowPassword(false);
   };
 
   const saveEmployee = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');
+
     if (!form.employeeId || !form.name || !form.mobileNumber || !form.email || !form.dateOfJoining) {
       setError('All fields are required.');
       return;
     }
+
+    if (!editing) {
+      const passwordError = validatePassword(
+        form.password,
+        form.confirmPassword,
+        true
+      );
+    
+      if (passwordError) {
+        setError(passwordError);
+        return;
+      }
+    }
+
+    // confirmPassword is a UI-only field and is never sent to the API.
+    const { confirmPassword: _confirmPassword, password, ...details } = form;
+
     try {
       if (editing) {
-        await employeeService.updateEmployee(editing.id, form);
-        showToast('Employee updated successfully.');
+        // Only include the password when the user actually typed a new one.
+        await employeeService.updateEmployee(editing.id, password ? { ...details, password } : details);
+        showToast(password ? 'Employee updated and password changed.' : 'Employee updated successfully.');
       } else {
-        await employeeService.createEmployee(form);
+        await employeeService.createEmployee({ ...details, password });
         showToast('Employee created successfully.');
       }
-      setModalOpen(false);
+      closeModal();
       await loadEmployees();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save employee.');
@@ -207,7 +259,7 @@ export function Employees() {
       </div>
 
       <Pagination page={page} pageSize={pageSize} total={visibleEmployees.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Employee' : 'New Employee'} size="lg">
+      <Modal isOpen={modalOpen} onClose={closeModal} title={editing ? 'Edit Employee' : 'New Employee'} size="lg">
         <form onSubmit={saveEmployee} className="grid gap-4 sm:grid-cols-2">
           <input value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} placeholder="Employee ID" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Name" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
@@ -218,10 +270,58 @@ export function Employees() {
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
+
+          {!editing &&(
+            <>
+            <div className="sm:col-span-2 border-t border-slate-200 pt-4">
+            <h3 className="text-sm font-semibold text-slate-900">
+              {editing ? 'Change Password' : 'Set Password'}
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              {editing
+                ? 'Leave both fields blank to keep the current password.'
+                : `Minimum ${MIN_PASSWORD_LENGTH} characters.`}
+            </p>
+          </div>
+
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              placeholder={editing ? 'New Password' : 'Password'}
+              autoComplete="new-password"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 pr-10 text-sm"
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword((visible) => !visible)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+         </div>
+
+         <input
+            type={showPassword ? 'text' : 'password'}
+            value={form.confirmPassword}
+            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+            placeholder="Confirm Password"
+            autoComplete="new-password"
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          />
+          </>
+          )}
           {error && <p className="sm:col-span-2 text-sm text-red-600">{error}</p>}
           <div className="flex gap-3 sm:col-span-2">
             <Button type="submit">{editing ? 'Save Changes' : 'Create Employee'}</Button>
-            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
+            <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
           </div>
         </form>
       </Modal>

@@ -2,18 +2,18 @@ import { apiRequest, queryString } from './apiClient';
 import type { Task, TaskStatus } from '../types';
 
 type ApiTask = { id: number; task_id: number; project_id : string | null; project_name: string | null; description: string; status: TaskStatus; reference_link: string | null; reference_document: string | null; assigned_to: string | null; assigned_on: string | null };
-function mapTask(task: ApiTask): Task { const referenceDocument = task.reference_document ? { id: `document-${task.id}`, name: task.reference_document, type: task.reference_document.split('.').pop() ?? 'file', size: 0, uploadedBy: '', uploadedAt: task.assigned_on ?? '' } : undefined; return { id: String(task.id), taskId: String(task.task_id),
-projectId: task.project_id ?? undefined, projectName:task.project_name ?? undefined, description: task.description, assignedTo: { employeeId: task.assigned_to ?? '', employeeName: task.assigned_to ?? 'Unassigned' }, assignedOn: task.assigned_on ?? '', referenceLink: task.reference_link ? { kind: 'url', label: task.reference_link, url: task.reference_link } : undefined, referenceDocument, comments: '', status: task.status }; }
+function mapTask(task: ApiTask): Task { return { id: String(task.id), taskId: String(task.task_id),
+projectId: task.project_id ?? undefined, projectName:task.project_name ?? undefined, description: task.description, assignedTo: { employeeId: task.assigned_to ?? '', employeeName: task.assigned_to ?? 'Unassigned' }, assignedOn: task.assigned_on ?? '', referenceLink: task.reference_link ? { kind: 'url', label: task.reference_link, url: task.reference_link } : undefined, comments: '', status: task.status }; }
 
 type TaskInput = Omit<Task, 'id'> & { projectId?: string };
 export const taskService = {
   async getTasks() { return (await apiRequest<ApiTask[]>('/api/tasks?page=1&pageSize=100')).map(mapTask); },
   async createTask(input: TaskInput) {
-    const created = await apiRequest<ApiTask>('/api/tasks', { method: 'POST', body: JSON.stringify({ taskId: input.taskId,projectId: input.projectId, description: input.description, status: input.status, referenceLink: input.referenceLink?.url ?? null, referenceDocument: input.referenceDocument?.name ?? null, assignedTo: input.assignedTo.employeeId, assignedOn: input.assignedOn }) });
+    const created = await apiRequest<ApiTask>('/api/tasks', { method: 'POST', body: JSON.stringify({ taskId: input.taskId,projectId: input.projectId, description: input.description, status: input.status, referenceLink: input.referenceLink?.url ?? null, assignedTo: input.assignedTo.employeeId, assignedOn: input.assignedOn }) });
     return mapTask(created);
   },
   async updateTask(id: string, input: TaskInput) {
-    const updated = await apiRequest<ApiTask>(`/api/tasks/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify({ taskId: input.taskId,projectId: input.projectId, description: input.description, status: input.status, referenceLink: input.referenceLink?.url ?? null, referenceDocument: input.referenceDocument?.name ?? null, assignedTo: input.assignedTo.employeeId, assignedOn: input.assignedOn }) });
+    const updated = await apiRequest<ApiTask>(`/api/tasks/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify({ taskId: input.taskId,projectId: input.projectId, description: input.description, status: input.status, referenceLink: input.referenceLink?.url ?? null, assignedTo: input.assignedTo.employeeId, assignedOn: input.assignedOn }) });
     return mapTask(updated);
   },
   async deleteTask(id: string) { await apiRequest(`/api/tasks/${encodeURIComponent(id)}`, { method: 'DELETE' }); },

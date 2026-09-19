@@ -11,9 +11,8 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { formatDate } from '../data/mockData';
 import { employeeService } from '../services/employeeService';
-import { fileService, getFileTypeFromExtension, isSupportedFile } from '../services/fileService';
 import { taskService } from '../services/taskService';
-import type { Employee, Project,ProjectFile, Task, TaskStatus } from '../types';
+import type { Employee, Project, Task, TaskStatus } from '../types';
 import { can } from '../utils/authorization';
 import { taskMasterService } from '../services/taskService';
 import { projectService } from '../services/projectService';
@@ -26,7 +25,7 @@ type TaskFormState = {
   employeeId: string;
   assignedOn: string;
   referenceUrl: string;
-  referenceFile: ProjectFile | null;
+  //referenceFile: ProjectFile | null;
   comments: string;
   status: TaskStatus;
 };
@@ -38,7 +37,7 @@ const emptyForm: TaskFormState = {
   employeeId: '',
   assignedOn: '',
   referenceUrl: '',
-  referenceFile: null,
+  //referenceFile: null,
   comments: '',
   status: 'Pending',
 };
@@ -127,7 +126,7 @@ projectService.getProjects(),
       employeeId: task.assignedTo.employeeId,
       assignedOn: task.assignedOn,
       referenceUrl: task.referenceLink?.kind === 'url' ? task.referenceLink.url ?? '' : '',
-      referenceFile: task.referenceDocument ?? null,
+      //referenceFile: task.referenceDocument ?? null,
       comments: task.comments,
       status: task.status,
     });
@@ -148,7 +147,7 @@ projectService.getProjects(),
       referenceLink: form.referenceUrl
           ? { kind: 'url', label: form.referenceUrl, url: form.referenceUrl }
           : undefined,
-      referenceDocument: form.referenceFile ?? undefined,
+      //referenceDocument: form.referenceFile ?? undefined,
       comments: form.comments,
       status: form.status,
     };
@@ -171,26 +170,6 @@ projectService.getProjects(),
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save task.');
     }
-  };
-
-  const handleReferenceFile = async (file: File | undefined) => {
-    if (!file) return;
-    if (!isSupportedFile(file.name)) {
-      setError('This reference file type is not supported.');
-      return;
-    }
-    const type = getFileTypeFromExtension(file.name);
-    const referenceFile: ProjectFile = {
-      id: `task-file-${Date.now()}`,
-      name: file.name,
-      type,
-      size: file.size,
-      uploadedBy: user?.name ?? 'Unknown',
-      uploadedAt: new Date().toISOString().split('T')[0],
-      content: ['txt', 'csv', 'json'].includes(type) ? await file.text() : undefined,
-      blobUrl: ['txt', 'csv', 'json'].includes(type) ? undefined : URL.createObjectURL(file),
-    };
-    setForm((current) => ({ ...current, referenceFile, referenceUrl: '' }));
   };
 
   const exportRows = visibleTasks.map((task) => ({
@@ -281,7 +260,7 @@ projectService.getProjects(),
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1100px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50">
-              <tr>{['Actions', 'Project', 'Select Task', 'Description', 'Assigned To', 'Assigned On', 'Reference Link', 'Reference Document', 'Comments', 'Status'].map((column) => <th key={column} className="px-4 py-3 font-medium text-slate-600">{column}</th>)}</tr>
+              <tr>{['Actions', 'Project', 'Select Task', 'Description', 'Assigned To', 'Assigned On', 'Reference Link', 'Comments', 'Status'].map((column) => <th key={column} className="px-4 py-3 font-medium text-slate-600">{column}</th>)}</tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {paginatedTasks.map((task) => (
@@ -293,7 +272,7 @@ projectService.getProjects(),
                   <td className="px-4 py-3 text-slate-600">{task.assignedTo.employeeId} - {task.assignedTo.employeeName}</td>
                   <td className="px-4 py-3 text-slate-600">{formatDate(task.assignedOn)}</td>
                   <td className="px-4 py-3">{task.referenceLink ? <Button variant="ghost" size="sm" onClick={() => setPreviewRef(task)}><Eye className="h-4 w-4" />Preview</Button> : <span className="text-slate-400">None</span>}</td>
-                  <td className="px-4 py-3">{task.referenceDocument ? (task.referenceDocument.blobUrl || task.referenceDocument.content ? <Button variant="ghost" size="sm" onClick={() => setPreviewRef(task)}><Eye className="h-4 w-4" />Preview</Button> : <span className="text-slate-600">{task.referenceDocument.name}</span>) : <span className="text-slate-400">None</span>}</td>
+                  
                   <td className="px-4 py-3 text-slate-600">{task.comments.length > 500 ? <span>{task.comments.slice(0, 500)}... <button className="font-medium text-slate-900 underline" onClick={() => setViewComment(task)}>View More</button></span> : task.comments}</td>
                   <td className="px-4 py-3"><StatusBadge status={task.status} /></td>
                 </tr>
@@ -336,13 +315,13 @@ projectService.getProjects(),
             {employees.map((employee) => <option key={employee.id} value={employee.employeeId}>{employee.name} ({employee.employeeId})</option>)}
           </select>
           <input type="date" value={form.assignedOn} onChange={(e) => setForm({ ...form, assignedOn: e.target.value })} className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-          <input value={form.referenceUrl} onChange={(e) => setForm({ ...form, referenceUrl: e.target.value, referenceFile: null })} placeholder="Reference URL" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-          <input type="file" onChange={(e) => handleReferenceFile(e.target.files?.[0])} className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
+          <input value={form.referenceUrl} onChange={(e) => setForm({ ...form, referenceUrl: e.target.value })} placeholder="Reference URL" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
+          
           <textarea value={form.comments} onChange={(e) => setForm({ ...form, comments: e.target.value })} placeholder="Comments" className="min-h-28 rounded-md border border-slate-300 px-3 py-2 text-sm sm:col-span-2" />
           <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as TaskStatus })} className="rounded-md border border-slate-300 px-3 py-2 text-sm">
             {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
           </select>
-          {form.referenceFile && <p className="text-sm text-slate-500">Attached: {form.referenceFile.name}</p>}
+          
           {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
           <div className="flex gap-3 sm:col-span-2"><Button type="submit">{editing ? 'Save Changes' : 'Create Task'}</Button><Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button></div>
         </form>
@@ -350,16 +329,18 @@ projectService.getProjects(),
 
       <Modal isOpen={!!viewComment} onClose={() => setViewComment(null)} title="Task Comment" size="lg"><p className="whitespace-pre-wrap text-sm text-slate-700">{viewComment?.comments}</p></Modal>
        <Modal isOpen={!!previewRef} onClose={() => setPreviewRef(null)} title="Reference Preview" size="xl">
-         {previewRef?.referenceLink?.kind === 'url' ? <a className="text-sm font-medium text-slate-900 underline" href={previewRef.referenceLink.url} target="_blank" rel="noreferrer">Open URL</a> : previewRef?.referenceDocument ? <ReferenceFilePreview file={previewRef.referenceDocument} /> : null}
-      </Modal>
+       {previewRef?.referenceLink?.kind === 'url' && (
+    <a
+      className="text-sm font-medium text-slate-900 underline"
+      href={previewRef.referenceLink.url}
+      target="_blank"
+      rel="noreferrer"
+    >
+      Open URL
+    </a>
+  )}
+</Modal>
       <ConfirmDialog isOpen={!!deleting} title="Delete Task?" message="Are you sure you want to delete this task?" onConfirm={deleteTask} onCancel={() => setDeleting(null)} />
     </Layout>
   );
-}
-
-function ReferenceFilePreview({ file }: { file: ProjectFile }) {
-  if (file.blobUrl && ['jpg', 'jpeg'].includes(file.type)) return <img src={file.blobUrl} alt={file.name} className="mx-auto max-h-[60vh] rounded-md object-contain" />;
-  if (file.blobUrl && file.type === 'pdf') return <iframe src={file.blobUrl} title={file.name} className="h-[60vh] w-full rounded-md border border-slate-200" />;
-  if (file.content) return <pre className="max-h-[60vh] overflow-auto rounded-md bg-slate-50 p-4 text-sm">{file.content}</pre>;
-  return <Button variant="secondary" onClick={() => fileService.downloadFile(file)}><Download className="h-4 w-4" />Download</Button>;
 }

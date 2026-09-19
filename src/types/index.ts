@@ -86,7 +86,7 @@ export interface TaskReference {
   kind: 'url' | 'file';
   label: string;
   url?: string;
-  file?: ProjectFile;
+  //file?: ProjectFile;
 }
 
 export interface Task {
@@ -101,7 +101,7 @@ export interface Task {
   };
   assignedOn: string;
   referenceLink?: TaskReference;
-  referenceDocument?: ProjectFile;
+  //referenceDocument?: ProjectFile;
   comments: string;
   status: TaskStatus;
 }

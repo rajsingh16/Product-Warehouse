@@ -1,18 +1,28 @@
 -- Project Warehouse database foundation.
 -- This migration is additive and intentionally does not drop or alter existing data.
 
+CREATE SEQUENCE IF NOT EXISTS emp_id_seq;
+
 CREATE TABLE IF NOT EXISTS users (
     user_id TEXT PRIMARY KEY,
-    emp_id TEXT NOT NULL UNIQUE,
+    emp_id TEXT NOT NULL UNIQUE DEFAULT ('EMP' || lpad(nextval('emp_id_seq')::text, 3, '0')),
     user_name TEXT NOT NULL,
     mobile TEXT,
     password_hash TEXT,
     email TEXT NOT NULL UNIQUE,
     user_type TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    active_session_id UUID,
     CONSTRAINT users_user_type_check CHECK (user_type IN ('Administrator', 'User'))
 );
 ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS active_session_id UUID;
+ALTER TABLE users ALTER COLUMN emp_id SET DEFAULT ('EMP' || lpad(nextval('emp_id_seq')::text, 3, '0'));
+SELECT setval(
+    'emp_id_seq',
+    COALESCE((SELECT MAX(NULLIF(regexp_replace(emp_id, '[^0-9]', '', 'g'), '')::BIGINT) FROM users), 0) + 1,
+    false
+);
 
 CREATE TABLE IF NOT EXISTS permissions (
     permission_code TEXT PRIMARY KEY,

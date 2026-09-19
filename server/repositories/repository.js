@@ -24,7 +24,7 @@ export const usersRepository = {
     const count = await pool.query(`SELECT COUNT(*)::int AS total FROM users u ${where}`, values);
     values.push(pageSize, offset);
     const result = await pool.query(
-      `SELECT u.user_id, u.emp_id, u.user_name, u.mobile, u.email, u.user_type,
+      `SELECT u.user_id, u.emp_id, u.user_name, u.mobile, u.email, u.date_of_joining, u.user_type,
               COALESCE(array_agg(up.permission_code) FILTER (WHERE up.permission_code IS NOT NULL), '{}') AS permissions
          FROM users u LEFT JOIN user_permissions up ON up.user_id = u.user_id
         ${where} GROUP BY u.user_id ORDER BY u.user_id LIMIT $${values.length - 1} OFFSET $${values.length}`,
@@ -34,7 +34,7 @@ export const usersRepository = {
   },
   async get(id) {
     const result = await pool.query(
-      `SELECT u.user_id, u.emp_id, u.user_name, u.mobile, u.email, u.user_type,
+      `SELECT u.user_id, u.emp_id, u.user_name, u.mobile, u.email, u.date_of_joining, u.user_type,
               COALESCE(array_agg(up.permission_code) FILTER (WHERE up.permission_code IS NOT NULL), '{}') AS permissions
          FROM users u LEFT JOIN user_permissions up ON up.user_id = u.user_id
         WHERE u.user_id = $1 GROUP BY u.user_id`, [id],
@@ -43,19 +43,20 @@ export const usersRepository = {
   },
   async create(user) {
     const result = await pool.query(
-      `INSERT INTO users (user_id, emp_id, user_name, mobile, email, user_type)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO users (user_id, emp_id, user_name, mobile, email, date_of_joining, user_type, password_hash)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING user_id, emp_id, user_name, mobile, email, user_type`,
-      [user.userId, user.empId, user.userName, user.mobile, user.email, user.userType],
+      [user.userId, user.empId, user.userName, user.mobile, user.email, user.userType, user.passwordHash,],
     );
     return result.rows[0];
   },
   async update(id, user) {
     const result = await pool.query(
-      `UPDATE users SET emp_id = $2, user_name = $3, mobile = $4, email = $5, user_type = $6
+      `UPDATE users SET emp_id = $2, user_name = $3, mobile = $4, email = $5,date_of_joining = $6, user_type = $7,
+                       password_hash = COALESCE($8, password_hash)
         WHERE user_id = $1
-        RETURNING user_id, emp_id, user_name, mobile, email, user_type`,
-      [id, user.empId, user.userName, user.mobile, user.email, user.userType],
+        RETURNING user_id, emp_id, user_name, mobile, email, date_of_joining, user_type`,
+      [id, user.empId, user.userName, user.mobile, user.email, user.dateOfJoining, user.userType, user.passwordHash],
     );
     return result.rows[0] ?? null;
   },
@@ -166,7 +167,7 @@ export const taskMasterRepository = {
 };
 
 export const tasksRepository = {
-  async list({ search, status, projectId, pageSize, offset }) {
+  async list({ search, status, projectId, assignedTo, pageSize, offset }) {
     const values = [];
     const filters = [];
     if (search) { values.push(`%${search}%`); filters.push(`
@@ -182,7 +183,13 @@ export const tasksRepository = {
     }
     if (projectId) { 
     values.push(projectId); 
-    filters.push(`m.assigned_to = $${values.length}`); }
+    filters.push(`m.project_id = $${values.length}`); }
+    if (assignedTo) {
+      values.push(assignedTo);
+      filters.push(`m.assigned_to = $${values.length}`);
+    }
+  
+
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
     const count = await pool.query(`
     SELECT COUNT(*)::int AS total 
@@ -218,8 +225,14 @@ export const tasksRepository = {
     );
     return { rows: result.rows, total: count.rows[0].total };
   },
-  async get(id) {
-    const result = await pool.query('SELECT m.id, m.pid AS task_id, m.project_id,p.project_name, m.description, m.status, m.reference_link, m.reference_document, m.assigned_to, m.assigned_on, tm.task_name FROM task_user_mapping m JOIN task_master tm ON tm.task_id = m.pid LEFT JOIN projects p ON p.project_id = m.project_id WHERE m.id = $1', [id]);
+  async get(id, assignedTo) {
+    const values =[id];
+    let assignedFilter ='';
+    if (assignedTo){
+      values.push(assignedTo);
+      assignedFilter =`AND m.assigned_to = $${values.length}`;
+    }
+    const result = await pool.query('SELECT m.id, m.pid AS task_id, m.project_id,p.project_name, m.description, m.status, m.reference_link, m.reference_document, m.assigned_to, m.assigned_on, tm.task_name FROM task_user_mapping m JOIN task_master tm ON tm.task_id = m.pid LEFT JOIN projects p ON p.project_id = m.project_id WHERE m.id = $1 ${assignedFilter}', values);
     return result.rows[0] ?? null;
   },
   async create(task) {

@@ -17,7 +17,7 @@ function tokenFor(user, sessionId) {
   ).toString('base64url'); 
   const payload = Buffer.from(
     JSON.stringify({ sub: user.user_id,sessionId, exp: Math.floor(Date.now() / 1000) + 8 * 60 * 60 })).toString('base64url'); const signature = crypto.createHmac('sha256', process.env.JWT_SECRET).update(`${header}.${payload}`).digest('base64url'); return `${header}.${payload}.${signature}`; }
-function publicUser(row) { return { id: row.user_id, userId: row.user_id, employeeId: row.emp_id, name: row.user_name, email: row.email, role: row.user_type === 'Administrator' ? 'Administrator' : 'Employee', userType: row.user_type, whatsappLastDigits: row.mobile.slice(-2), permissions: row.permissions ?? [] }; }
+function publicUser(row) { return { id: row.user_id, userId: row.user_id, employeeId: row.emp_id, name: row.user_name, email: row.email, role: row.user_type === 'Administrator' ? 'Administrator' : 'Employee', userType: row.user_type, whatsappLastDigits: row.mobile?.slice(-2) ?? '', permissions: row.permissions ?? [] }; }
 function otpHash(otp) { return crypto.createHash('sha256').update(`${otp}:${process.env.JWT_SECRET}`).digest('hex'); }
 function newOtp() { return String(crypto.randomInt(0, 1000000)).padStart(6, '0'); }
 

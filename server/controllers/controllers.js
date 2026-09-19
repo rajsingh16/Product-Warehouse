@@ -1,6 +1,7 @@
 import { permissionsRepository, projectsRepository, taskMasterRepository, tasksRepository, usersRepository } from '../repositories/repository.js';
 import { HttpError, paginatedResponse, parsePagination, permissionList, requiredString, optionalString } from '../utils/http.js';
 import { foldersController } from './foldersController.js';
+import bcrypt from 'bcrypt';
 
 const allowedPermissions = new Set([
   'project_view', 'project_create','project_delete',
@@ -10,14 +11,53 @@ const allowedPermissions = new Set([
   'task_view', 'task_create', 'task_edit', 'task_delete',
 ]);
 
+const MIN_PASSWORD_LENGTH = 8;
+
+function validatedPassword(value) {
+  const password = requiredString(value, 'password');
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    throw new HttpError(400, `password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+  }
+  return password;
+}
+
 function bodyUser(body, id = body.userId) {
+  const isUpdate = Boolean(id) && id !== body.userId;
   return {
     userId: requiredString(id, 'userId'),
     empId: requiredString(body.empId, 'empId'),
     userName: requiredString(body.userName, 'userName'),
     mobile: optionalString(body.mobile, 'mobile'),
     email: requiredString(body.email, 'email'),
-    userType: ['Administrator', 'User'].includes(body.userType) ? body.userType : (() => { throw new HttpError(400, 'userType must be Administrator or User'); })(),
+    dateOfJoining: optionalString(body.dateOfJoining, 'dateOfJoining'),
+    userType: ['Administrator', 'User'].includes(body.userType)
+      ? body.userType
+      : (() => { throw new HttpError(400, 'userType must be Administrator or User'); })(),
+    // On create: required. On update: optional — omitted/blank means "keep current".
+    password: body.password ? validatedPassword(body.password) : 
+    undefined,
+    //(isUpdate ? undefined : validatedPassword(body.password)),
+
+  };
+}
+
+function bodyCreateUser(body) {
+  return {
+    userId: requiredString(body.userId, 'userId'),
+    empId: requiredString(body.empId, 'empId'),
+    userName: requiredString(body.userName, 'userName'),
+    mobile: optionalString(body.mobile, 'mobile'),
+    email: requiredString(body.email, 'email'),
+    dateOfJoining: optionalString(body.dateOfJoining, 'dateOfJoining'),
+    userType: ['Administrator', 'User'].includes(body.userType)
+      ? body.userType
+      : (() => {
+          throw new HttpError(
+            400,
+            'userType must be Administrator or User'
+          );
+        })(),
+    password: requiredString(body.password, 'password'),
   };
 }
 
@@ -55,29 +95,36 @@ export const usersController = {
     res.json({ success: true, data: user });
   },
   async create(req, res) {
-    const project = await projectsRepository.create(
-      bodyProject(req.body)
-    );
+    const input = bodyCreateUser(req.body);
   
-    const folders =
-      await foldersController.ensureDefaultFolders(
-        project.project_id,
-        req.user.user_id
-      );
+    const passwordHash = await bcrypt.hash(input.password, 12);
+  
+    const user = await usersRepository.create({
+      userId: input.userId,
+      empId: input.empId,
+      userName: input.userName,
+      mobile: input.mobile,
+      email: input.email,
+      dateOfJoining: input.dateOfJoining,
+      userType: input.userType,
+      passwordHash,
+    });
   
     res.status(201).json({
       success: true,
-      data: {
-        ...project,
-        folders,
-      },
+      data: user,
     });
   },
   async update(req, res) {
-    const user = await usersRepository.update(requiredString(req.params.id, 'id'), bodyUser(req.body, req.params.id));
-    if (!user) throw new HttpError(404, 'User not found');
-    res.json({ success: true, data: user });
-  },
+  const input = bodyUser(req.body, req.params.id);
+  const { password, ...details } = input;
+  const user = await usersRepository.update(requiredString(req.params.id, 'id'), {
+    ...details,
+    passwordHash: password ? await bcrypt.hash(password, 12) : null,
+  });
+  if (!user) throw new HttpError(404, 'User not found');
+  res.json({ success: true, data: user });
+},
   async remove(req, res) {
     if (!(await usersRepository.remove(requiredString(req.params.id, 'id')))) throw new HttpError(404, 'User not found');
     res.status(204).send();
@@ -146,11 +193,46 @@ export const taskMasterController = {
 export const tasksController = {
   async list(req, res) {
     const { page, pageSize, offset } = parsePagination(req.query);
-    const result = await tasksRepository.list({ search: optionalString(req.query.search, 'search'), status: optionalString(req.query.status, 'status'), projectId: optionalString(req.query.projectId, 'projectId'), pageSize, offset });
+    const assignedTo =
+      req.user.user_type === 'Administrator'
+      ? undefined
+      : req.user.emp_id;
+    const result = await tasksRepository.list({ search: optionalString(req.query.search, 'search'), status: optionalString(req.query.status, 'status'), projectId: optionalString(req.query.projectId, 'projectId'),assignedTo, pageSize, offset });
     paginatedResponse(res, result.rows, page, pageSize, result.total);
   },
   async get(req, res) {
-    const task = await tasksRepository.get(requiredString(req.params.id, 'id'));
+    const task = await tasksRepository.get(requiredString(req.params.id, 'id'),assignedTo);
+    const assignedTo =
+      req.user.user_type === 'Administrator'
+      ? undefined
+      : req.user.emp_id;
+    const result = await taskMasterRepository.list({
+      search: optionalString(req.query.search, 'search'),
+      status: optionalString(req.query.status, 'status'),
+      projectId: optionalString(req.query.projectId, 'projectId'),
+      assignedTo,
+      pageSize,
+      offset,
+    });
+    paginatedResponse(
+      res,
+      result.rows,
+      page,
+      pageSize,
+      result.total
+    );
+  },
+  async get(req, res) {
+    const assignedTo =
+      req.user.user_type === 'Administrator'
+        ? undefined
+        : req.user.emp_id;
+
+    const task = await tasksRepository.get(
+      requiredString(req.params.id, 'id'),
+      assignedTo
+    );
+
     if (!task) throw new HttpError(404, 'Task not found');
     res.json({ success: true, data: task });
   },
