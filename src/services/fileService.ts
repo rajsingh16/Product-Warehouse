@@ -201,53 +201,51 @@ export const fileService = {
     );
   },
 
-  async downloadFile(
-    file: ProjectFile
-  ): Promise<void> {
-    const response =
-      await fetch(
-        `/api/files/${encodeURIComponent(file.id)}`,
-        {
-          credentials: 'include',
-        }
-      );
-
+  async downloadFile(file: ProjectFile): Promise<void> {
+    const token = localStorage.getItem('pw_access_token');
+  
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+  
+    const response = await fetch(
+      `/api/files/${encodeURIComponent(file.id)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+  
     if (!response.ok) {
-      let message =
-        'Failed to download file.';
-
+      let message = 'Failed to download file.';
+  
       try {
-        const data =
-          await response.json();
-
+        const data = await response.json();
+  
         if (data?.message) {
           message = data.message;
         }
       } catch {
         // Ignore JSON parsing failure.
       }
-
+  
       throw new Error(message);
     }
-
-    const blob =
-      await response.blob();
-
-    const url =
-      URL.createObjectURL(blob);
-
-    const anchor =
-      document.createElement('a');
-
+  
+    const blob = await response.blob();
+  
+    const url = URL.createObjectURL(blob);
+  
+    const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = file.name;
-
+  
     document.body.appendChild(anchor);
-
     anchor.click();
-
     anchor.remove();
-
+  
     URL.revokeObjectURL(url);
   },
-};
+}
