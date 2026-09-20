@@ -5,9 +5,11 @@ import { fileService, getFileTypeLabel } from '../../services/fileService';
 import type { Folder, ProjectFile } from '../../types';
 import { Button } from '../common/Button';
 import { FileIcon } from './FileIcon';
+import { useEffect, useState, useMemo } from 'react';
+import { Pagination } from '../common/Pagination';
 
 interface FileTableProps {
-  files: ProjectFile[];
+  files: ProjectFile[]; 
   folders?: Folder[];
   project: string;
   onPreview?: (file: ProjectFile) => void;
@@ -15,6 +17,36 @@ interface FileTableProps {
 }
 
 export function FileTable({ files,folders =[], project, onPreview, onDelete }: FileTableProps) {
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [files.length, folders.length]);
+
+  const total = folders.length + files.length;
+
+  const visibleFolders = useMemo(() => {
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+
+    return folders.slice(
+      Math.max(0, startIndex),
+      Math.min(folders.length, endIndex)
+    );
+  }, [folders, page, pageSize]);
+
+  const visibleFiles = useMemo(() => {
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+
+    return files.slice(
+      Math.max(0, startIndex - folders.length),
+      Math.max(0, endIndex - folders.length)
+    );
+  }, [files, folders.length, page, pageSize]);
+
   if (files.length === 0 && folders.length === 0) {
     return (
       <div className="rounded-lg border border-slate-200 bg-white p-12 text-center">
@@ -24,8 +56,8 @@ export function FileTable({ files,folders =[], project, onPreview, onDelete }: F
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <div className="overflow-x-auto">
+    <div className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
+      <div className="max-h-[calc(100vh-26rem)] overflow-auto">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-slate-200 bg-slate-50">
             <tr>
@@ -38,7 +70,7 @@ export function FileTable({ files,folders =[], project, onPreview, onDelete }: F
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {folders.map((folder) => (
+          {visibleFolders.map((folder) => (
               <tr key={folder.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3">
                   <Link
@@ -70,7 +102,7 @@ export function FileTable({ files,folders =[], project, onPreview, onDelete }: F
 
               </tr>
             ))}
-            {files.map((file) => (
+            {visibleFiles.map((file) => (
               <tr key={file.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -108,6 +140,18 @@ export function FileTable({ files,folders =[], project, onPreview, onDelete }: F
           </tbody>
         </table>
       </div>
+      {total > 0 && (
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={setPage}
+          onPageSizeChange={(newPageSize) => {
+            setPageSize(newPageSize);
+            setPage(1);
+          }}
+        />
+      )}
     </div>
   );
 }

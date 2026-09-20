@@ -1,4 +1,4 @@
-import { Download, Eye, FileSpreadsheet, Filter, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Download, Eye, FileSpreadsheet, Filter, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { Button } from '../components/common/Button';
@@ -223,28 +223,159 @@ projectService.getProjects(),
             <div className="relative">
               <Button variant="secondary" onClick={() => setFilterOpen((open) => !open)}><Filter className="h-4 w-4" />Filter</Button>
               {filterOpen && (
-                <div className="absolute z-30 mt-2 w-80 rounded-lg border border-slate-200 bg-white p-4 shadow-lg">
-                  <h2 className="mb-3 text-sm font-semibold">Filter Tasks</h2>
-                  <div className="space-y-3">
-                    <input value={filters.taskId} onChange={(e) => setFilters({ ...filters, taskId: e.target.value })} placeholder="Task ID" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
-                    <input type="date" value={filters.dateFrom} onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
-                    <input type="date" value={filters.dateTo} onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
-                    <div className="space-y-2">
-                      {statuses.map((status) => (
-                        <label key={status} className="flex items-center gap-2 text-sm">
-                          <input type="checkbox" checked={filters.statuses.includes(status)} onChange={() => setFilters((current) => ({ ...current, statuses: current.statuses.includes(status) ? current.statuses.filter((item) => item !== status) : [...current.statuses, status] }))} />
-                          {status}
-                        </label>
-                      ))}
-                    </div>
-                    <input value={filters.employee} onChange={(e) => setFilters({ ...filters, employee: e.target.value })} placeholder="Employee ID / Name" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
-                    <div className="flex justify-end gap-2">
-                      <Button variant="secondary" size="sm" onClick={() => setFilters({ taskId: '', dateFrom: '', dateTo: '', statuses: [], employee: '' })}>Clear</Button>
-                      <Button size="sm" onClick={() => setFilterOpen(false)}>Apply</Button>
-                    </div>
-                  </div>
-                </div>
-              )}
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+    {/* Background */}
+    <div
+      className="absolute inset-0 bg-slate-900/50"
+      onClick={() => setFilterOpen(false)}
+      aria-hidden
+    />
+
+    {/* Filter */}
+    <div
+      className="
+        relative
+        flex
+        w-full
+        max-w-lg
+        max-h-[calc(100vh-1.5rem)]
+        sm:max-h-[calc(100vh-2rem)]
+        flex-col
+        overflow-hidden
+        rounded-lg
+        border
+        border-slate-200
+        bg-white
+        shadow-xl
+      "
+    >
+      {/* Header */}
+      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5 sm:py-4">
+        <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
+          Filter Tasks
+        </h2>
+
+        <button
+          type="button"
+          onClick={() => setFilterOpen(false)}
+          className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          aria-label="Close"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Scrollable filter content */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+        <div className="space-y-3">
+
+          <input
+            value={filters.taskId}
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                taskId: e.target.value,
+              })
+            }
+            placeholder="Task ID"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          />
+
+          <input
+            type="date"
+            value={filters.dateFrom}
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                dateFrom: e.target.value,
+              })
+            }
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          />
+
+          <input
+            type="date"
+            value={filters.dateTo}
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                dateTo: e.target.value,
+              })
+            }
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          />
+
+          <div className="space-y-2">
+            {statuses.map((status) => (
+              <label
+                key={status}
+                className="flex items-center gap-2 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  checked={filters.statuses.includes(status)}
+                  onChange={() =>
+                    setFilters((current) => ({
+                      ...current,
+                      statuses: current.statuses.includes(status)
+                        ? current.statuses.filter(
+                            (item) => item !== status
+                          )
+                        : [...current.statuses, status],
+                    }))
+                  }
+                />
+
+                {status}
+              </label>
+            ))}
+          </div>
+
+          <input
+            value={filters.employee}
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                employee: e.target.value,
+              })
+            }
+            placeholder="Employee ID / Name"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          />
+
+        </div>
+      </div>
+
+      {/* Buttons always remain visible */}
+      <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 px-4 py-3 sm:flex-row sm:justify-end sm:px-5">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() =>
+            setFilters({
+              taskId: '',
+              dateFrom: '',
+              dateTo: '',
+              statuses: [],
+              employee: '',
+            })
+          }
+          className="w-full sm:w-auto"
+        >
+          Clear
+        </Button>
+
+        <Button
+          size="sm"
+          onClick={() => setFilterOpen(false)}
+          className="w-full sm:w-auto"
+        >
+          Apply
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">

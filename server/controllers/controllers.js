@@ -96,7 +96,7 @@ export const usersController = {
   async create(req, res) {
     const input = bodyCreateUser(req.body);
   
-    const passwordHash = await bcrypt.hash(input.password, 12);
+    const passwordHash = input.password;
   
     const user = await usersRepository.create({
       userId: input.userId,

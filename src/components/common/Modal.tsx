@@ -34,10 +34,10 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
       <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} aria-hidden />
       <div
-        className={`relative w-full ${sizeClasses[size]} rounded-lg border border-slate-200 bg-white shadow-xl`}
+        className={`relative my-auto flex max-h-[calc(100vh-2rem)] w-full ${sizeClasses[size]} flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
@@ -54,7 +54,9 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="px-5 py-4">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          {children}
+        </div>
       </div>
     </div>
   );
