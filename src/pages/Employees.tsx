@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Filter, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, Filter, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../components/common/Button';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
@@ -181,8 +181,8 @@ export function Employees() {
     <Layout breadcrumbs={[{ label: 'Employees', path: '/employees' }, { label: 'Employee List' }]}>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-slate-900">Employee List</h1>
-        <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex flex-1 flex-col gap-3 sm:flex-row">
+        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+          <div className="flex w-full flex-col gap-3 sm:flex-row xl:flex-1">
             <div className="relative w-full max-w-md">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search employees..." className="w-full rounded-md border border-slate-300 py-2 pl-10 pr-3 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" />
@@ -193,28 +193,174 @@ export function Employees() {
                 Filter
               </Button>
               {filterOpen && (
-                <div className="absolute z-30 mt-2 w-80 rounded-lg border border-slate-200 bg-white p-4 shadow-lg">
-                  <h2 className="mb-3 text-sm font-semibold text-slate-900">Filter Employees</h2>
-                  <div className="space-y-3">
-                    {(['employeeId', 'name', 'mobileNumber', 'email'] as const).map((key) => (
-                      <input key={key} value={filters[key]} onChange={(e) => setFilters({ ...filters, [key]: e.target.value })} placeholder={key === 'employeeId' ? 'Employee ID' : key === 'mobileNumber' ? 'Mobile Number' : key[0].toUpperCase() + key.slice(1)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
-                    ))}
-                    <select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm">
-                      <option value="">All Statuses</option>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="secondary" size="sm" onClick={() => setFilters({ employeeId: '', name: '', mobileNumber: '', email: '', status: '' })}>Clear</Button>
-                      <Button size="sm" onClick={() => setFilterOpen(false)}>Apply Filter</Button>
-                    </div>
-                  </div>
-                </div>
-              )}
+  <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-3 sm:items-center sm:p-4">
+    {/* Overlay */}
+    <div
+      className="absolute inset-0 bg-slate-900/50"
+      onClick={() => setFilterOpen(false)}
+      aria-hidden
+    />
+
+    {/* Filter Modal */}
+    <div className="relative my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-lg border border-slate-200 bg-white p-4 shadow-xl sm:p-5">
+      
+      {/* Header */}
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
+          Filter Employees
+        </h2>
+
+        <button
+          type="button"
+          onClick={() => setFilterOpen(false)}
+          className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100"
+          aria-label="Close filters"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Filter Fields */}
+      <div className="grid gap-3 sm:grid-cols-2">
+
+        <input
+          value={filters.employeeId}
+          onChange={(e) =>
+            setFilters((current) => ({
+              ...current,
+              employeeId: e.target.value,
+            }))
+          }
+          placeholder="Employee ID"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        />
+
+        <input
+          value={filters.name}
+          onChange={(e) =>
+            setFilters((current) => ({
+              ...current,
+              name: e.target.value,
+            }))
+          }
+          placeholder="Name"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        />
+
+        <input
+          value={filters.mobileNumber}
+          onChange={(e) =>
+            setFilters((current) => ({
+              ...current,
+              mobileNumber: e.target.value,
+            }))
+          }
+          placeholder="Mobile Number"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        />
+
+        <input
+          type="email"
+          value={filters.email}
+          onChange={(e) =>
+            setFilters((current) => ({
+              ...current,
+              email: e.target.value,
+            }))
+          }
+          placeholder="Email"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        />
+
+      </div>
+
+      {/* Status */}
+      <fieldset className="mt-4">
+        <legend className="mb-2 text-sm font-medium text-slate-700">
+          Status
+        </legend>
+
+        <div className="flex flex-wrap gap-2">
+          <label className="flex items-center gap-1.5 rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600">
+            <input
+              type="radio"
+              name="employee-status"
+              checked={filters.status === ''}
+              onChange={() =>
+                setFilters((current) => ({
+                  ...current,
+                  status: '',
+                }))
+              }
+            />
+            All
+          </label>
+
+          <label className="flex items-center gap-1.5 rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600">
+            <input
+              type="radio"
+              name="employee-status"
+              checked={filters.status === 'active'}
+              onChange={() =>
+                setFilters((current) => ({
+                  ...current,
+                  status: 'active',
+                }))
+              }
+            />
+            Active
+          </label>
+
+          <label className="flex items-center gap-1.5 rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600">
+            <input
+              type="radio"
+              name="employee-status"
+              checked={filters.status === 'inactive'}
+              onChange={() =>
+                setFilters((current) => ({
+                  ...current,
+                  status: 'inactive',
+                }))
+              }
+            />
+            Inactive
+          </label>
+        </div>
+      </fieldset>
+
+      {/* Footer */}
+      <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() =>
+            setFilters({
+              employeeId: '',
+              name: '',
+              mobileNumber: '',
+              email: '',
+              status: '',
+            })
+          }
+        >
+          Clear
+        </Button>
+
+        <Button
+          type="button"
+          onClick={() => setFilterOpen(false)}
+        >
+          Apply Filters
+        </Button>
+      </div>
+
+    </div>
+  </div>
+)}
             </div>
           </div>
           {can(user, 'employees:create') && (
-            <Button onClick={openCreate}>
+            <Button onClick={openCreate} className="w-full shrink-0 sm:w-auto">
               <Plus className="h-4 w-4" />
               New Employee
             </Button>
@@ -222,82 +368,289 @@ export function Employees() {
         </div>
       </div>
 
-      {loadError && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{loadError}</div>}
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="max-h-[460px] overflow-auto">
-          <table className="w-full min-w-[900px] text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50">
-              <tr>
-                {['Actions', 'Emp ID', 'Name', 'Mobile Number', 'Email', 'Date of Joining', 'Status'].map((column) => (
-              <th
-                key={column}
-                className="px-4 py-3 font-medium text-slate-600"
-              >
-                {column}
-              </th>
-              ))}
-              </tr>
-            </thead>
+      {loadError && 
+      <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{loadError}</div>}
+      {/* =========================================================
+    EMPLOYEE TABLE / MOBILE VIEW
+    ========================================================= */}
 
+<div className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+
+{/* =======================================================
+    DESKTOP / TABLET VIEW
+    ======================================================= */}
+<div className="hidden min-w-0 md:block">
+
+  {/* Scrollable table area */}
+  <div className="max-h-[calc(100vh-22rem)] min-w-0 overflow-auto">
+
+    <table className="w-full min-w-[850px] text-left text-sm">
+
+      {/* Sticky Header */}
+      <thead className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50">
+        <tr>
+          {[
+            'Actions',
+            'Emp ID',
+            'Name',
+            'Mobile Number',
+            'Email',
+            'Date of Joining',
+            'Status',
+          ].map((column) => (
+            <th
+              key={column}
+              className="whitespace-nowrap px-4 py-3 font-medium text-slate-600"
+            >
+              {column}
+            </th>
+          ))}
+        </tr>
+      </thead>
+
+      {/* Table Body */}
       <tbody className="divide-y divide-slate-200">
-        {paginatedEmployees.map((employee) => (
-          <tr key={employee.id} className="hover:bg-slate-50">
-            <td className="px-4 py-3">
-              <div className="flex gap-2">
-                {can(user, 'employees:edit') && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEdit(employee)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Edit
-                  </Button>
-                )}
 
-                {can(user, 'employees:delete') && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleting(employee)}
-                  >
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                  </Button>
-                )}
-              </div>
-            </td>
-
-            <td className="px-4 py-3 text-slate-600">
-              {employee.employeeId}
-            </td>
-
-            <td className="px-4 py-3 font-medium text-slate-900">
-              {employee.name}
-            </td>
-
-            <td className="px-4 py-3 text-slate-600">
-              {employee.mobileNumber}
-            </td>
-
-            <td className="px-4 py-3 text-slate-600">
-              {employee.email}
-            </td>
-
-            <td className="px-4 py-3 text-slate-600">
-              {formatDate(employee.dateOfJoining)}
-            </td>
-
-            <td className="px-4 py-3">
-              <StatusBadge status={employee.status} />
+        {paginatedEmployees.length === 0 ? (
+          <tr>
+            <td
+              colSpan={7}
+              className="px-4 py-10 text-center text-sm text-slate-500"
+            >
+              No employees found.
             </td>
           </tr>
-        ))}
+        ) : (
+          paginatedEmployees.map((employee) => (
+            <tr
+              key={employee.id}
+              className="hover:bg-slate-50"
+            >
+
+              {/* Actions */}
+              <td className="whitespace-nowrap px-4 py-3">
+                <div className="flex gap-2">
+
+                  {can(user, 'employees:edit') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEdit(employee)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Edit
+                    </Button>
+                  )}
+
+                  {can(user, 'employees:delete') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleting(employee)}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                  )}
+
+                </div>
+              </td>
+
+              {/* Employee ID */}
+              <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                {employee.employeeId}
+              </td>
+
+              {/* Name */}
+              <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-900">
+                {employee.name}
+              </td>
+
+              {/* Mobile */}
+              <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                {employee.mobileNumber}
+              </td>
+
+              {/* Email */}
+              <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                {employee.email}
+              </td>
+
+              {/* Date of Joining */}
+              <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                {formatDate(employee.dateOfJoining)}
+              </td>
+
+              {/* Status */}
+              <td className="whitespace-nowrap px-4 py-3">
+                <StatusBadge status={employee.status} />
+              </td>
+
+            </tr>
+          ))
+        )}
+
       </tbody>
     </table>
+
   </div>
 </div>
 
-      <Pagination page={page} pageSize={pageSize} total={visibleEmployees.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
+
+{/* =======================================================
+    MOBILE VIEW
+    ======================================================= */}
+<div className="block md:hidden">
+
+  {paginatedEmployees.length === 0 ? (
+
+    <div className="px-4 py-10 text-center text-sm text-slate-500">
+      No employees found.
+    </div>
+
+  ) : (
+
+    <div className="divide-y divide-slate-200">
+
+      {paginatedEmployees.map((employee) => (
+
+        <div
+          key={employee.id}
+          className="p-4"
+        >
+
+          {/* Employee Header */}
+          <div className="flex items-start justify-between gap-3">
+
+            <div className="min-w-0 flex-1">
+
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Employee
+              </p>
+
+              <p className="mt-1 break-words text-base font-semibold text-slate-900">
+                {employee.name}
+              </p>
+
+            </div>
+
+            <div className="shrink-0">
+              <StatusBadge status={employee.status} />
+            </div>
+
+          </div>
+
+
+          {/* Employee ID */}
+          <div className="mt-4">
+
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              Employee ID
+            </p>
+
+            <p className="mt-1 break-words text-sm font-medium text-slate-900">
+              {employee.employeeId}
+            </p>
+
+          </div>
+
+
+          {/* Mobile Number + Date */}
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Mobile Number
+              </p>
+
+              <p className="mt-1 break-words text-sm text-slate-700">
+                {employee.mobileNumber || 'Not available'}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Date of Joining
+              </p>
+
+              <p className="mt-1 text-sm text-slate-700">
+                {formatDate(employee.dateOfJoining)}
+              </p>
+            </div>
+
+          </div>
+
+
+          {/* Email */}
+          <div className="mt-4">
+
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              Email
+            </p>
+
+            <p className="mt-1 break-all text-sm text-slate-700">
+              {employee.email || 'Not available'}
+            </p>
+
+          </div>
+
+
+          {/* Actions */}
+          <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+
+            {can(user, 'employees:edit') && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => openEdit(employee)}
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+            )}
+
+            {can(user, 'employees:delete') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDeleting(employee)}
+              >
+                <Trash2 className="h-4 w-4 text-red-600" />
+                Delete
+              </Button>
+            )}
+
+          </div>
+
+        </div>
+
+      ))}
+
+    </div>
+
+  )}
+
+</div>
+
+
+{/* =======================================================
+    PAGINATION
+    ======================================================= */}
+<div className="border-t border-slate-200 bg-white">
+
+  <Pagination
+    page={page}
+    pageSize={pageSize}
+    total={visibleEmployees.length}
+    onPageChange={setPage}
+    onPageSizeChange={(size) => {
+      setPageSize(size);
+      setPage(1);
+    }}
+  />
+
+</div>
+
+</div>
       <Modal isOpen={modalOpen} onClose={closeModal} title={editing ? 'Edit Employee' : 'New Employee'} size="lg">
         <form onSubmit={saveEmployee} className="grid gap-4 sm:grid-cols-2">
           {/* Only rendered when editing an existing employee */}

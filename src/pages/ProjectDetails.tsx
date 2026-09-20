@@ -57,7 +57,7 @@ export function ProjectDetails() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:gap-6">
+      <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
         {project.folders.map((folder) => (
           <FolderCard key={folder.id} projectId={project.id} folder={folder} />
         ))}

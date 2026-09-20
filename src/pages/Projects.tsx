@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/common/Button';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
@@ -94,33 +94,173 @@ export function Projects() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" />
-        </div>
-      ) : loadError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">{loadError}</div>
-      ) : (
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-  <div className="max-h-[460px] overflow-auto">
-    <ProjectTable
-      projects={visibleProjects}
-      onEdit={can(user, 'projects:edit') ? setEditProject : undefined}
-      onDelete={can(user, 'projects:delete') ? setDeleteProject : undefined}
-    />
+  <div className="flex items-center justify-center py-20">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" />
   </div>
+) : loadError ? (
+  <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+    {loadError}
+  </div>
+) : (
+  <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white">
 
-  <Pagination
-    page={page}
-    pageSize={pageSize}
-    total={visibleProjects.length}
-    onPageChange={setPage}
-    onPageSizeChange={(size) => {
-      setPageSize(size);
-      setPage(1);
-    }}
-  />
-</div>
+    {/* =====================================================
+        DESKTOP / TABLET PROJECT TABLE
+        ===================================================== */}
+    <div className="hidden min-h-0 min-w-0 flex-1 md:flex md:flex-col">
+
+      <div className="min-h-0 min-w-0 flex-1 overflow-auto">
+        <ProjectTable
+          projects={visibleProjects}
+          onEdit={
+            can(user, 'projects:edit')
+              ? setEditProject
+              : undefined
+          }
+          onDelete={
+            can(user, 'projects:delete')
+              ? setDeleteProject
+              : undefined
+          }
+        />
+      </div>
+
+    </div>
+
+
+    {/* =====================================================
+        MOBILE PROJECT VIEW
+        ===================================================== */}
+    <div className="min-h-0 flex-1 overflow-y-auto md:hidden">
+
+      {visibleProjects.length === 0 ? (
+        <div className="px-4 py-10 text-center text-sm text-slate-500">
+          No projects found.
+        </div>
+      ) : (
+        <div className="divide-y divide-slate-200">
+
+          {visibleProjects.map((project) => (
+            <div
+              key={project.id}
+              className="p-4"
+            >
+
+              {/* Project Header */}
+              <div className="flex items-start justify-between gap-3">
+
+                <div className="min-w-0 flex-1">
+
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Project
+                  </p>
+
+                  <p className="mt-1 break-words text-base font-semibold text-slate-900">
+                    {project.name}
+                  </p>
+
+                </div>
+
+                {/* Keep your existing project status UI here
+                    if ProjectTable already renders it */}
+
+              </div>
+
+
+              {/* Project ID */}
+              <div className="mt-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Project ID
+                </p>
+
+                <p className="mt-1 break-words text-sm font-medium text-slate-900">
+                  {project.id}
+                </p>
+              </div>
+
+
+              {/* Project Details */}
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Project Name
+                  </p>
+
+                  <p className="mt-1 break-words text-sm text-slate-700">
+                    {project.name}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Status
+                  </p>
+
+                  <p className="mt-1 break-words text-sm text-slate-700">
+                    {project.assignedEmployeeNames?.join(', ') || 'No employees assigned'}
+                  </p>
+                </div>
+
+              </div>
+
+
+              {/* Actions */}
+              <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+
+                {can(user, 'projects:edit') && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setEditProject(project)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </Button>
+                )}
+
+                {can(user, 'projects:delete') && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDeleteProject(project)}
+                  >
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                    Delete
+                  </Button>
+                )}
+
+              </div>
+
+            </div>
+          ))}
+
+        </div>
       )}
+
+    </div>
+
+
+    {/* =====================================================
+        PAGINATION
+        ===================================================== */}
+    <div className="shrink-0 border-t border-slate-200 bg-white">
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={projects.length}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
+      />
+
+    </div>
+
+  </div>
+)}
 
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="New Project" size="lg">
         <ProjectForm onSubmit={handleCreate} onCancel={() => setCreateOpen(false)} />

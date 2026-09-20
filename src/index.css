@@ -15,13 +15,29 @@
 
 html,
 body {
-  @apply h-full overflow-hidden;
+  @apply min-h-full overflow-x-hidden;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply min-w-0 bg-slate-50 text-slate-900 antialiased;
 }
 
 #root {
-  @apply h-full;
+  @apply h-full min-h-0 min-w-0;
+}
+
+/* Shared responsive primitives. Keep wide data sets inside their own region. */
+.responsive-table {
+  @apply min-w-0 overflow-auto;
+  overscroll-behavior: contain;
+}
+
+.responsive-table table {
+  min-width: max-content;
+}
+
+@media (max-width: 640px) {
+  .responsive-table table {
+    font-size: 0.8125rem;
+  }
 }

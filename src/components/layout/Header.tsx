@@ -35,8 +35,8 @@ export function Header({ title, onOpenSidebar }: { title: string; onOpenSidebar:
     .toUpperCase();
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-6">
-      <div className="flex items-center gap-3">
+    <header className="flex min-h-14 shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white px-3 py-2 sm:px-4 lg:px-6">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           onClick={onOpenSidebar}
           className="rounded-md p-2 hover:bg-slate-100 lg:hidden"
@@ -44,10 +44,10 @@ export function Header({ title, onOpenSidebar }: { title: string; onOpenSidebar:
         >
           <Menu className="h-5 w-5" />
         </button>
-        <h1 className="truncate text-lg font-semibold text-slate-900">{title}</h1>
+        <h1 className="min-w-0 truncate text-base font-semibold text-slate-900 sm:text-lg">{title}</h1>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-3">
         <span className="hidden rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 sm:inline-flex">
           Session expires in {secondsRemaining}s
         </span>
@@ -63,7 +63,7 @@ export function Header({ title, onOpenSidebar }: { title: string; onOpenSidebar:
             <p className="text-sm font-medium text-slate-900">{displayName}</p>
             <p className="text-xs text-slate-500">{user?.role}</p>
           </div>
-          <ChevronDown className="h-4 w-4 text-slate-400" />
+          <ChevronDown className="hidden h-4 w-4 text-slate-400 sm:block" />
         </button>
 
         {open && (

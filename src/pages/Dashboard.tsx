@@ -83,7 +83,8 @@ export function Dashboard() {
             {recentProjects.length === 0 ? (
               <p className="p-8 text-center text-slate-500">No projects yet.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              <div className="hidden overflow-x-auto md:block">
                 <table className="w-full text-left text-sm">
                   <thead className="border-b border-slate-200 bg-slate-50">
                     <tr>
@@ -112,6 +113,16 @@ export function Dashboard() {
                   </tbody>
                 </table>
               </div>
+              <div className="divide-y divide-slate-200 md:hidden">
+                {recentProjects.map((project) => (
+                  <div key={project.id} className="space-y-2 p-4">
+                    <Link to={`/projects/${project.id}`} className="block break-words font-medium text-slate-900 hover:underline">{project.name}</Link>
+                    <p className="break-words text-sm text-slate-600">{project.assignedEmployeeNames?.join(', ') || 'No employees assigned'}</p>
+                    <p className="text-xs text-slate-500">Created {formatDate(project.createdAt)}</p>
+                  </div>
+                ))}
+              </div>
+              </>
             )}
           </div>
         </>

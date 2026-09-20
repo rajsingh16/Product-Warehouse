@@ -16,11 +16,11 @@ export function FolderCard({
   return (
     <Link
       to={`/projects/${projectId}/${folder.id}`}
-      className="group flex aspect-square flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
+      className="group flex min-w-0 min-h-36 flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-4 text-center shadow-sm transition-all hover:border-slate-300 hover:shadow-md sm:aspect-square sm:p-6"
     >
       <Folder className="mb-3 h-12 w-12 text-slate-400 transition-colors group-hover:text-slate-600" />
 
-      <span className="text-lg font-semibold text-slate-800">
+      <span className="break-words text-base font-semibold text-slate-800 sm:text-lg">
         {folder.name}
       </span>
 

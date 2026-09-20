@@ -15,9 +15,9 @@ export function Pagination({ page, pageSize, total, onPageChange, onPageSizeChan
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1).filter((value) => value === 1 || value === totalPages || Math.abs(value - page) <= 1);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-      <span>Showing {first}–{last} of {total}</span>
-      <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-3 py-3 text-sm text-slate-600 sm:px-4">
+      <span className="w-full sm:w-auto">Showing {first}–{last} of {total}</span>
+      <div className="flex max-w-full flex-wrap items-center gap-2">
         <label className="flex items-center gap-2">
           <span className="sr-only">Page size</span>
           <select value={pageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))} className="rounded-md border border-slate-300 px-2 py-1 text-sm">

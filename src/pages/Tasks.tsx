@@ -214,206 +214,393 @@ projectService.getProjects(),
     <Layout breadcrumbs={[{ label: 'Employees', path: '/employees' }, { label: 'Task' }]}>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
-        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative w-full max-w-md">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" className="w-full rounded-md border border-slate-300 py-2 pl-10 pr-3 text-sm" />
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+  {/* Search + Filter */}
+  <div className="flex w-full flex-col gap-3 sm:flex-1 sm:flex-row">
+    <div className="relative w-full sm:max-w-md">
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search"
+        className="w-full rounded-md border border-slate-300 py-2.5 pl-10 pr-3 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+      />
+    </div>
+
+    <div className="relative w-full sm:w-auto">
+      <Button
+        type = "button"
+        variant="secondary"
+        onClick={() => setFilterOpen((open) => !open)}
+        className="w-full sm:w-auto"
+        aria-expanded={filterOpen}
+      >
+        <Filter className="h-4 w-4" />
+        Filter
+      </Button>
+
+      {filterOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-3 sm:items-center sm:p-4">
+          <div className="absolute inset-0 bg-slate-900/50" onClick={() => setFilterOpen(false)} aria-hidden />
+          <div className="relative my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-lg border border-slate-200 bg-white p-4 shadow-xl sm:p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-slate-900 sm:text-lg">Filter Tasks</h2>
+              <button type="button" onClick={() => setFilterOpen(false)} className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100" aria-label="Close filters">
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <div className="relative">
-              <Button variant="secondary" onClick={() => setFilterOpen((open) => !open)}><Filter className="h-4 w-4" />Filter</Button>
-              {filterOpen && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-    {/* Background */}
-    <div
-      className="absolute inset-0 bg-slate-900/50"
-      onClick={() => setFilterOpen(false)}
-      aria-hidden
-    />
-
-    {/* Filter */}
-    <div
-      className="
-        relative
-        flex
-        w-full
-        max-w-lg
-        max-h-[calc(100vh-1.5rem)]
-        sm:max-h-[calc(100vh-2rem)]
-        flex-col
-        overflow-hidden
-        rounded-lg
-        border
-        border-slate-200
-        bg-white
-        shadow-xl
-      "
-    >
-      {/* Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5 sm:py-4">
-        <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
-          Filter Tasks
-        </h2>
-
-        <button
-          type="button"
-          onClick={() => setFilterOpen(false)}
-          className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-          aria-label="Close"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-
-      {/* Scrollable filter content */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-        <div className="space-y-3">
-
-          <input
-            value={filters.taskId}
-            onChange={(e) =>
-              setFilters({
-                ...filters,
-                taskId: e.target.value,
-              })
-            }
-            placeholder="Task ID"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-
-          <input
-            type="date"
-            value={filters.dateFrom}
-            onChange={(e) =>
-              setFilters({
-                ...filters,
-                dateFrom: e.target.value,
-              })
-            }
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-
-          <input
-            type="date"
-            value={filters.dateTo}
-            onChange={(e) =>
-              setFilters({
-                ...filters,
-                dateTo: e.target.value,
-              })
-            }
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-
-          <div className="space-y-2">
-            {statuses.map((status) => (
-              <label
-                key={status}
-                className="flex items-center gap-2 text-sm"
-              >
-                <input
-                  type="checkbox"
-                  checked={filters.statuses.includes(status)}
-                  onChange={() =>
-                    setFilters((current) => ({
-                      ...current,
-                      statuses: current.statuses.includes(status)
-                        ? current.statuses.filter(
-                            (item) => item !== status
-                          )
-                        : [...current.statuses, status],
-                    }))
-                  }
-                />
-
-                {status}
-              </label>
-            ))}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input value={filters.taskId} onChange={(e) => setFilters((current) => ({ ...current, taskId: e.target.value }))} placeholder="Task ID" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
+              <input value={filters.employee} onChange={(e) => setFilters((current) => ({ ...current, employee: e.target.value }))} placeholder="Employee ID or name" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
+              <label className="text-sm text-slate-600">Date from<input type="date" value={filters.dateFrom} onChange={(e) => setFilters((current) => ({ ...current, dateFrom: e.target.value }))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900" /></label>
+              <label className="text-sm text-slate-600">Date to<input type="date" value={filters.dateTo} onChange={(e) => setFilters((current) => ({ ...current, dateTo: e.target.value }))} className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900" /></label>
+            </div>
+            <fieldset className="mt-4">
+              <legend className="mb-2 text-sm font-medium text-slate-700">Status</legend>
+              <div className="flex flex-wrap gap-2">
+                {statuses.map((status) => (
+                  <label key={status} className="flex items-center gap-1.5 rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600">
+                    <input type="checkbox" checked={filters.statuses.includes(status)} onChange={(e) => setFilters((current) => ({ ...current, statuses: e.target.checked ? [...current.statuses, status] : current.statuses.filter((value) => value !== status) }))} />
+                    {status}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4">
+              <Button type="button" variant="secondary" onClick={() => setFilters({ taskId: '', dateFrom: '', dateTo: '', statuses: [], employee: '' })}>Clear</Button>
+              <Button type="button" onClick={() => setFilterOpen(false)}>Apply Filters</Button>
+            </div>
           </div>
-
-          <input
-            value={filters.employee}
-            onChange={(e) =>
-              setFilters({
-                ...filters,
-                employee: e.target.value,
-              })
-            }
-            placeholder="Employee ID / Name"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-
         </div>
-      </div>
-
-      {/* Buttons always remain visible */}
-      <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 px-4 py-3 sm:flex-row sm:justify-end sm:px-5">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() =>
-            setFilters({
-              taskId: '',
-              dateFrom: '',
-              dateTo: '',
-              statuses: [],
-              employee: '',
-            })
-          }
-          className="w-full sm:w-auto"
-        >
-          Clear
-        </Button>
-
-        <Button
-          size="sm"
-          onClick={() => setFilterOpen(false)}
-          className="w-full sm:w-auto"
-        >
-          Apply
-        </Button>
-      </div>
+      )}
     </div>
   </div>
-)}
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={downloadExcel}><FileSpreadsheet className="h-4 w-4" />Download Excel</Button>
-            <Button variant="secondary" onClick={downloadCsv}><Download className="h-4 w-4" />Download CSV</Button>
-            {can(user, 'tasks:create') && <Button onClick={openCreate}><Plus className="h-4 w-4" />Assign Task</Button>}
-          </div>
-        </div>
-      </div>
 
-      {loadError && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{loadError}</div>}
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="h-[500px] overflow-y-auto overflow-x-auto">
-          <table className="w-full min-w-[1100px] text-left text-sm">
-            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
-              <tr>{['Actions', 'Project', 'Select Task', 'Description', 'Assigned To', 'Assigned On', 'Reference Link', 'Comments', 'Status'].map((column) => <th key={column} className="px-4 py-3 font-medium text-slate-600">{column}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {paginatedTasks.map((task) => (
-                <tr key={task.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3"><div className="flex gap-2">{can(user, 'tasks:edit') && <Button variant="ghost" size="sm" onClick={() => openEdit(task)}><Pencil className="h-4 w-4" />Edit</Button>}{can(user, 'tasks:delete') && <Button variant="ghost" size="sm" onClick={() => setDeleting(task)}><Trash2 className="h-4 w-4 text-red-600" /></Button>}</div></td>
-                  <td className ="px-4 py-3 text-slate-600 "> {task.projectName ?? task.projectId ?? "No Projecy"}</td>
-                  <td className="px-4 py-3 text-slate-600">{task.taskId}</td>
-                  <td className="px-4 py-3 text-slate-700">{task.description}</td>
-                  <td className="px-4 py-3 text-slate-600">{task.assignedTo.employeeId} - {task.assignedTo.employeeName}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatDate(task.assignedOn)}</td>
-                  <td className="px-4 py-3">{task.referenceLink ? <Button variant="ghost" size="sm" onClick={() => setPreviewRef(task)}><Eye className="h-4 w-4" />Preview</Button> : <span className="text-slate-400">None</span>}</td>
-                  
-                  <td className="px-4 py-3 text-slate-600">{task.comments.length > 500 ? <span>{task.comments.slice(0, 500)}... <button className="font-medium text-slate-900 underline" onClick={() => setViewComment(task)}>View More</button></span> : task.comments}</td>
-                  <td className="px-4 py-3"><StatusBadge status={task.status} /></td>
+  {/* Action buttons */}
+  <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+    <Button
+      variant="secondary"
+      onClick={downloadExcel}
+      className="w-full sm:w-auto"
+    >
+      <FileSpreadsheet className="h-4 w-4" />
+      Download Excel
+    </Button>
+
+    <Button
+      variant="secondary"
+      onClick={downloadCsv}
+      className="w-full sm:w-auto"
+    >
+      <Download className="h-4 w-4" />
+      Download CSV
+    </Button>
+
+    {can(user, 'tasks:create') && (
+      <Button
+        onClick={openCreate}
+        className="w-full sm:w-auto"
+      >
+        <Plus className="h-4 w-4" />
+        Assign Task
+      </Button>
+    )}
+  </div>
+</div>
+</div>
+{loadError && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {loadError}
+        </div>
+      )}
+
+      {/* =========================================================
+          RESPONSIVE CONTAINER (DESKTOP + MOBILE VIEWS)
+          ========================================================= */}
+      <div className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+
+        {/* DESKTOP / TABLET VIEW */}
+        <div className="mt-4 flex min-h-0 flex-1 flex-col">
+          <div className="max-h-[calc(100vh-22rem)] overflow-auto">
+            <table className="w-full min-w-[1100px] text-left text-sm">
+              <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50">
+                <tr>
+                  {[
+                    'Actions',
+                    'Project',
+                    'Select Task',
+                    'Description',
+                    'Assigned To',
+                    'Assigned On',
+                    'Reference Link',
+                    'Comments',
+                    'Status',
+                  ].map((column) => (
+                    <th
+                      key={column}
+                      className="whitespace-nowrap px-4 py-3 font-medium text-slate-600"
+                    >
+                      {column}
+                    </th>
+                  ))}
                 </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-200">
+                {paginatedTasks.map((task) => (
+                  <tr
+                    key={task.id}
+                    className="hover:bg-slate-50"
+                  >
+                    {/* Actions */}
+                    <td className="whitespace-nowrap px-4 py-3">
+                      <div className="flex gap-2">
+                        {can(user, 'tasks:edit') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEdit(task)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                          </Button>
+                        )}
+
+                        {can(user, 'tasks:delete') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleting(task)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Project */}
+                    <td className="px-4 py-3 text-slate-600">
+                      {task.projectName ?? task.projectId ?? 'No Project'}
+                    </td>
+
+                    {/* Task */}
+                    <td className="px-4 py-3 text-slate-600">
+                      {task.taskId}
+                    </td>
+
+                    {/* Description */}
+                    <td className="max-w-[300px] px-4 py-3 text-slate-700">
+                      <div className="break-words">
+                        {task.description}
+                      </div>
+                    </td>
+
+                    {/* Assigned To */}
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                      {task.assignedTo.employeeId} -{' '}
+                      {task.assignedTo.employeeName}
+                    </td>
+
+                    {/* Assigned On */}
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                      {formatDate(task.assignedOn)}
+                    </td>
+
+                    {/* Reference Link */}
+                    <td className="px-4 py-3">
+                      {task.referenceLink ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPreviewRef(task)}
+                        >
+                          <Eye className="h-4 w-4" />
+                          Preview
+                        </Button>
+                      ) : (
+                        <span className="text-slate-400">
+                          None
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Comments */}
+                    <td className="max-w-[300px] px-4 py-3 text-slate-600">
+                      {task.comments.length > 500 ? (
+                        <span>
+                          {task.comments.slice(0, 500)}...
+                          <button
+                            className="ml-1 font-medium text-slate-900 underline"
+                            onClick={() => setViewComment(task)}
+                          >
+                            View More
+                          </button>
+                        </span>
+                      ) : (
+                        task.comments
+                      )}
+                    </td>
+
+                    {/* Status */}
+                    <td className="whitespace-nowrap px-4 py-3">
+                      <StatusBadge status={task.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* MOBILE VIEW */}
+        <div className="block md:hidden">
+          {paginatedTasks.length === 0 ? (
+            <div className="px-4 py-10 text-center text-sm text-slate-500">
+              No tasks found.
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-200">
+              {paginatedTasks.map((task) => (
+                <div key={task.id} className="p-4">
+                  {/* Card Header */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Project
+                      </p>
+                      <p className="mt-1 break-words text-base font-semibold text-slate-900">
+                        {task.projectName ?? task.projectId ?? 'No Project'}
+                      </p>
+                    </div>
+                    <StatusBadge status={task.status} />
+                  </div>
+
+                  {/* Task ID */}
+                  <div className="mt-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Task
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-slate-900">
+                      {task.taskId}
+                    </p>
+                  </div>
+
+                  {/* Description */}
+                  <div className="mt-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Description
+                    </p>
+                    <p className="mt-1 break-words text-sm text-slate-700">
+                      {task.description}
+                    </p>
+                  </div>
+
+                  {/* Assigned To + Date */}
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Assigned To
+                      </p>
+                      <p className="mt-1 break-words text-sm text-slate-700">
+                        {task.assignedTo.employeeId} - {task.assignedTo.employeeName}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Assigned On
+                      </p>
+                      <p className="mt-1 text-sm text-slate-700">
+                        {formatDate(task.assignedOn)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Reference */}
+                  <div className="mt-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Reference Link
+                    </p>
+                    <div className="mt-1">
+                      {task.referenceLink ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPreviewRef(task)}
+                        >
+                          <Eye className="h-4 w-4" />
+                          Preview
+                        </Button>
+                      ) : (
+                        <span className="text-sm text-slate-400">None</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Comments */}
+                  <div className="mt-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Comments
+                    </p>
+                    <div className="mt-1 break-words text-sm text-slate-700">
+                      {task.comments.length > 250 ? (
+                        <>
+                          {task.comments.slice(0, 250)}...
+                          <button
+                            className="ml-1 font-medium text-slate-900 underline"
+                            onClick={() => setViewComment(task)}
+                          >
+                            View More
+                          </button>
+                        </>
+                      ) : (
+                        task.comments || 'No comments'
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                    {can(user, 'tasks:edit') && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => openEdit(task)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </Button>
+                    )}
+
+                    {can(user, 'tasks:delete') && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleting(task)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                        Delete
+                      </Button>
+                    )}
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
         </div>
       </div>
 
-      <Pagination page={page} pageSize={pageSize} total={visibleTasks.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={visibleTasks.length}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
+      />
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Task' : 'Assign Task'} size="xl">
         <form onSubmit={saveTask} className="grid gap-4 sm:grid-cols-2">
         <select value= {form.projectId} onChange={(e) => setForm ({...form,projectId: e.target.value,})}
