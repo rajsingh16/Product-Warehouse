@@ -15,6 +15,7 @@ type ApiTask = {
 
   reference_link: string | null;
   reference_document: string | null;
+  comments: string | null;
 
   assigned_to: string | null;
   assigned_to_name: string | null;
@@ -57,7 +58,7 @@ function mapTask(task: ApiTask): Task {
         }
       : undefined,
 
-    comments: '',
+    comments: task.comments ?? '',
 
     status: task.status,
   };
@@ -92,6 +93,7 @@ export const taskService = {
           referenceLink: input.referenceLink?.url ?? null,
           assignedTo: input.assignedTo.employeeId,
           assignedOn: input.assignedOn,
+          comments: input.comments,
         }),
       }
     );
@@ -112,6 +114,7 @@ export const taskService = {
           referenceLink: input.referenceLink?.url ?? null,
           assignedTo: input.assignedTo.employeeId,
           assignedOn: input.assignedOn,
+          comments: input.comments,
         }),
       }
     );

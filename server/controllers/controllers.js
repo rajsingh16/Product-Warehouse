@@ -79,6 +79,7 @@ function bodyTask(body, id = body.taskId) {
     status: requiredString(body.status, 'status'),
     referenceLink: optionalString(body.referenceLink, 'referenceLink'),
     referenceDocument: optionalString(body.referenceDocument, 'referenceDocument'),
+    comments: optionalString(body.comments, 'comments'),
     assignedTo: optionalString(body.assignedTo, 'assignedTo'),
     assignedOn: optionalString(body.assignedOn, 'assignedOn'),
   };

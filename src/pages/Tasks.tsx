@@ -460,7 +460,7 @@ projectService.getProjects(),
 
                     {/* Comments */}
                     <td className="max-w-[300px] px-4 py-3 text-slate-600">
-                      {task.comments.length > 500 ? (
+                      {(task.comments ?? '').length > 500 ? (
                         <span>
                           {task.comments.slice(0, 500)}...
                           <button

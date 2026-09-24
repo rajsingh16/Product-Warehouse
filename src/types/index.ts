@@ -168,6 +168,9 @@ export const SUPPORTED_EXTENSIONS = [
   '.json',
   '.jpg',
   '.jpeg',
+  '.png',
+  '.gif',
+  '.webp',
 ] as const;
 
 export type SupportedExtension = (typeof SUPPORTED_EXTENSIONS)[number];

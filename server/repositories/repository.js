@@ -433,6 +433,7 @@ export const tasksRepository = {
         m.status,
         m.reference_link,
         m.reference_document,
+        m.comments,
     
         m.assigned_to,
         assigned_user.user_name AS assigned_to_name,
@@ -496,6 +497,7 @@ export const tasksRepository = {
         m.status,
         m.reference_link,
         m.reference_document,
+        m.comments,
   
         m.assigned_to,
         assigned_user.user_name AS assigned_to_name,
@@ -528,12 +530,12 @@ export const tasksRepository = {
     return result.rows[0] ?? null;
   },
   async create(task) {
-    const result = await pool.query('INSERT INTO task_user_mapping (pid, project_id, description, status, reference_link, reference_document, assigned_to, assigned_on, assigned_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *', 
-      [task.taskId,task.projectId, task.description, task.status, task.referenceLink, task.referenceDocument, task.assignedTo, task.assignedOn, task.assignedBy]);
+    const result = await pool.query('INSERT INTO task_user_mapping (pid, project_id, description, status, reference_link, reference_document, comments, assigned_to, assigned_on, assigned_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *', 
+      [task.taskId,task.projectId, task.description, task.status, task.referenceLink, task.referenceDocument,task.comments, task.assignedTo, task.assignedOn, task.assignedBy]);
     return result.rows[0];
   },
   async update(id, task) {
-    const result = await pool.query('UPDATE task_user_mapping SET pid=$2, project_id = $3, description=$4, status=$5, reference_link=$6, reference_document=$7, assigned_to=$8, assigned_on=$9 WHERE id=$1 RETURNING *', [id, task.taskId, task.projectId, task.description, task.status, task.referenceLink, task.referenceDocument, task.assignedTo, task.assignedOn]);
+    const result = await pool.query('UPDATE task_user_mapping SET pid=$2, project_id = $3, description=$4, status=$5, reference_link=$6, reference_document=$7, comments = $8, assigned_to=$9, assigned_on=$10 WHERE id=$1 RETURNING *', [id, task.taskId, task.projectId, task.description, task.status, task.referenceLink, task.referenceDocument, task.comments, task.assignedTo, task.assignedOn]);
     return result.rows[0] ?? null;
   },
   async remove(id) {
