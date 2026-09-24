@@ -167,7 +167,7 @@ export default function Profile() {
                 <section className="rounded-xl border border-gray-200 bg-white p-5">
                   <h2 className="mb-1 text-base font-semibold text-gray-900">Security</h2>
                   <p className="text-sm text-gray-900">Password</p>
-                  <p className="text-xs text-gray-500">Last changed: not available</p>
+                  {/*<p className="text-xs text-gray-500">Last changed: not available</p>*/}
                   <p className="mt-2 text-sm text-gray-600">
                     Keep your account secure by regularly updating your password.
                   </p>
