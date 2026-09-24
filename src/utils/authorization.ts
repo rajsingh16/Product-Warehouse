@@ -1,12 +1,13 @@
 import type { AuthUser, RoleId, RoleName } from '../types';
 
-export type Permission = RoleId | 'projects:create' | 'projects:edit' | 'projects:delete' | 'documents:view' | 'documents:upload' | 'documents:delete' | 'employees:create' | 'employees:edit' | 'employees:delete' | 'tasks:create' | 'tasks:edit' | 'tasks:delete' | 'roles:assign';
+export type Permission = RoleId | 'projects:create' | 'projects:edit' | 'projects:delete' | 'documents:view' | 'documents:upload' | 'documents:delete' | 'employees:create' | 'employees:edit' | 'employees:delete' | 'tasks:view' | 'tasks:view_all' | 'tasks:create' | 'tasks:edit' | 'tasks:delete' | 'roles:assign';
 
 const aliases: Partial<Record<Permission, RoleId>> = {
   'projects:create': 'project_create', 'projects:edit': 'project_create', 'projects:delete': 'project_delete',
   'documents:view': 'document_view','documents:upload': 'document_upload','documents:delete': 'document_delete',
   'employees:create': 'employee_create', 'employees:edit': 'employee_create', 'employees:delete': 'employee_create',
-  'tasks:create': 'task_create', 'tasks:edit': 'task_edit', 'tasks:delete': 'task_delete', 'roles:assign': 'user_assign',
+  'tasks:view':'task_view','tasks:view_all' : 'task_view_all' ,'tasks:create': 'task_create', 'tasks:edit': 'task_edit', 'tasks:delete': 'task_delete', 
+  'roles:assign': 'user_assign',
 };
 
 const legacyRolePermissions: Record<RoleName, RoleId[]> = {

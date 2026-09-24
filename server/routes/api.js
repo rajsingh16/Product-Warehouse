@@ -5,6 +5,7 @@ import { asyncHandler } from '../utils/http.js';
 import { permissionsController, projectsController, taskMasterController, tasksController, usersController } from '../controllers/controllers.js';
 import { filesController } from '../controllers/filesController.js';
 import { foldersController } from '../controllers/foldersController.js';
+import { profileController } from '../controllers/profileController.js'
 import multer from 'multer';
 
 const router = Router();
@@ -36,15 +37,52 @@ router.post('/task-master', requireAdministrator, asyncHandler(taskMasterControl
 router.put('/task-master/:id', requireAdministrator, asyncHandler(taskMasterController.update));
 router.delete('/task-master/:id', requireAdministrator, asyncHandler(taskMasterController.remove));
 
-router.get('/tasks', requirePermission('task_view'), asyncHandler(tasksController.list));
-router.get('/tasks/:id', requirePermission('task_view'), asyncHandler(tasksController.get));
-router.post('/tasks', requirePermission('task_create'), asyncHandler(tasksController.create));
-router.put('/tasks/:id', requirePermission('task_edit'), asyncHandler(tasksController.update));
-router.delete('/tasks/:id', requirePermission('task_delete'), asyncHandler(tasksController.remove));
-router.get('/tasks/:id/users', requirePermission('task_view'), asyncHandler(tasksController.assignments));
-router.post('/tasks/:id/users', requirePermission('user_assign'), asyncHandler(tasksController.assign));
-router.put('/tasks/:id/users/:userId', requirePermission('user_assign'), asyncHandler(tasksController.updateAssignment));
-router.delete('/tasks/:id/users/:userId', requirePermission('user_assign'), asyncHandler(tasksController.unassign));
+
+router.get(
+  '/tasks', 
+  requireAnyPermission('task_view','task_view_all'), 
+  asyncHandler(tasksController.list)
+);
+router.get(
+  '/tasks/:id', 
+  requireAnyPermission('task_view', 'task_view_all'), 
+  asyncHandler(tasksController.get)
+);
+router.post(
+  '/tasks', 
+  requirePermission('task_create'), 
+  asyncHandler(tasksController.create)
+);
+router.put(
+  '/tasks/:id', 
+  requirePermission('task_edit'), 
+  asyncHandler(tasksController.update)
+);
+router.delete(
+  '/tasks/:id', 
+  requirePermission('task_delete'), 
+  asyncHandler(tasksController.remove)
+);
+router.get(
+  '/tasks/:id/users', 
+  requireAnyPermission('task_view', 'task_view_all'), 
+  asyncHandler(tasksController.assignments)
+);
+router.post(
+  '/tasks/:id/users', 
+  requirePermission('user_assign'), 
+  asyncHandler(tasksController.assign)
+);
+router.put(
+  '/tasks/:id/users/:userId', 
+  requirePermission('user_assign'), 
+  asyncHandler(tasksController.updateAssignment)
+);
+router.delete(
+  '/tasks/:id/users/:userId', 
+  requirePermission('user_assign'), 
+  asyncHandler(tasksController.unassign)
+);
 
 
 
@@ -70,7 +108,24 @@ router.delete(
   asyncHandler(foldersController.remove)
 );
 
+// =========================
+// PROFILE ROUTES
+// =========================
 
+router.get(
+  '/profile',
+  asyncHandler(profileController.getProfile)
+);
+
+router.put(
+  '/profile',
+  asyncHandler(profileController.updateProfile)
+);
+
+router.put(
+  '/profile/password',
+  asyncHandler(profileController.changePassword)
+);
 // =========================
 // PROJECT FILE ROUTES
 // =========================

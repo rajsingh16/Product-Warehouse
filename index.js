@@ -1,23 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 function App() {
-  const [data, setData] = useState([]);
+  const [profile, setProfile] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/test`)
-      .then((response) => response.json())
-      .then((data) => setData(data))
-      .catch((error) => console.error('Error fetching data:', error));
+    fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
+      method: 'GET',
+      credentials: 'include',
+    })
+      .then(async (response) => {
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result?.message || 'Failed to load profile');
+        }
+
+        return result;
+      })
+      .then((result) => {
+        setProfile(result.data);
+      })
+      .catch((error) => {
+        console.error('Profile API error:', error);
+        setError(error.message);
+      });
   }, []);
 
   return (
     <div>
-      <h2>PostgreSQL Data in React</h2>
-      <ul>
-        {data.map((item, index) => (
-          <li key={index}>{item.name}</li> // Replace 'name' with your column
-        ))}
-      </ul>
+      <h2>Profile API Test</h2>
+
+      {error && (
+        <p style={{ color: 'red' }}>
+          {error}
+        </p>
+      )}
+
+      {profile && (
+        <div>
+          <p>Name: {profile.user_name}</p>
+          <p>Employee ID: {profile.emp_id}</p>
+          <p>Email: {profile.email}</p>
+          <p>Mobile: {profile.mobile}</p>
+          <p>Designation: {profile.designation}</p>
+          <p>Account Type: {profile.user_type}</p>
+          <p>Status: {profile.status}</p>
+        </div>
+      )}
     </div>
   );
 }

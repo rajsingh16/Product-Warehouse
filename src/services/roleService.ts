@@ -6,7 +6,7 @@ export const availableRoles: RoleDefinition[] = [
   { id: 'document_view', label: 'Document View', group: 'Document' },{ id: 'document_upload', label: 'Document upload', group: 'Document' },{ id: 'document_delete', label: 'Document delete', group: 'Document' },
   { id: 'employee_view', label: 'Employee View', group: 'Employee' }, { id: 'employee_create', label: 'Employee Create', group: 'Employee' },
   { id: 'user_view', label: 'User View', group: 'User' }, { id: 'user_create', label: 'User Create', group: 'User' }, { id: 'user_assign', label: 'User Assign', group: 'User' },
-  { id: 'task_view', label: 'Task View', group: 'Task' }, { id: 'task_create', label: 'Task Create', group: 'Task' }, { id: 'task_edit', label: 'Task Edit', group: 'Task' }, { id: 'task_delete', label: 'Task Delete', group: 'Task' },
+  { id: 'task_view', label: 'Task View', group: 'Task' },{ id: 'task_view_all', label: 'Task View All', group: 'Task' }, { id: 'task_create', label: 'Task Create', group: 'Task' }, { id: 'task_edit', label: 'Task Edit', group: 'Task' }, { id: 'task_delete', label: 'Task Delete', group: 'Task' },
 ];
 export const availableRoleIds = availableRoles.map((role) => role.id);
 export function dedupeRoles(roles: RoleId[]) { return [...new Set(roles)].filter((role): role is RoleId => availableRoleIds.includes(role)); }

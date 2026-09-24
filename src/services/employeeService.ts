@@ -1,9 +1,19 @@
 import { apiRequest, queryString } from './apiClient';
 import type { Employee, RoleName } from '../types';
 
-type ApiUser = { user_id: string; emp_id: string; user_name: string; mobile: string | null; email: string; date_of_joining: string | null; user_type: 'Administrator' | 'User'; permissions?: string[] };
+type ApiUser = {
+   user_id: string; 
+   emp_id: string; 
+   user_name: string;
+   designation: string | null; 
+   mobile: string | null; 
+   email: string; 
+   date_of_joining: string | null; 
+   user_type: 'Administrator' | 'User'; 
+   permissions?: string[] };
 type CreateEmployeeInput = {
   name: string;
+  designation: string;
   mobileNumber: string;
   email: string;
   dateOfJoining: string;
@@ -11,10 +21,8 @@ type CreateEmployeeInput = {
   password: string;
 };
 
-type UpdateEmployeeInput = Partial<Employee> & {
-  password?: string;
-};
-function mapUser(user: ApiUser): Employee { return { id: user.user_id, employeeId: user.emp_id, name: user.user_name, mobileNumber: user.mobile ?? '', email: user.email, dateOfJoining: user.date_of_joining ?? '', role: (user.user_type === 'Administrator' ? 'Administrator' : 'Employee') as RoleName, status: 'active', projectIds: [] }; }
+type UpdateEmployeeInput = Partial<Employee>;
+function mapUser(user: ApiUser): Employee { return { id: user.user_id, employeeId: user.emp_id, name: user.user_name,designation: user.designation ?? '', mobileNumber: user.mobile ?? '', email: user.email, dateOfJoining: user.date_of_joining ?? '', role: (user.user_type === 'Administrator' ? 'Administrator' : 'Employee') as RoleName, status: 'active', projectIds: [] }; }
 
 export const employeeService = {
   async getEmployees() { return (await apiRequest<ApiUser[]>('/api/users?page=1&pageSize=100')).map(mapUser); },
@@ -43,6 +51,7 @@ export const employeeService = {
           userId: `user-${Date.now()}`,
           //empId: input.employeeId ?? `EMP-${Date.now()}`,
           userName: input.name,
+          designation: input.designation,
           mobile: input.mobileNumber,
           email: input.email,
           dateOfJoining: input.dateOfJoining,
@@ -64,11 +73,12 @@ export const employeeService = {
       userId: id,
       empId: input.employeeId ?? current.emp_id,
       userName: input.name ?? current.user_name,
+      designation: input.designation ?? current.designation,
       mobile: input.mobileNumber ?? current.mobile,
       email: input.email ?? current.email,
       dateOfJoining: input.dateOfJoining ?? current.date_of_joining,
       userType: current.user_type,
-      ...(input.password && { password: input.password }),
+      //...(input.password && { password: input.password }),
     };
   
     const user = await apiRequest<ApiUser>(

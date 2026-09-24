@@ -82,7 +82,7 @@ export function FileUpload({ onUpload }: FileUploadProps) {
           ref={inputRef}
           type="file"
           multiple
-          accept=".txt,.doc,.docx,.pdf,.xls,.xlsx,.csv,.json,.jpg,.jpeg"
+          accept=".txt,.doc,.docx,.pdf,.xls,.xlsx,.csv,.json,.jpg,.jpeg,.png,.gif,.webp"
           className="hidden"
           onChange={(e) => handleFileSelect(e.target.files)}
         />

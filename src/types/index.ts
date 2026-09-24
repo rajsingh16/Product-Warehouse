@@ -14,6 +14,7 @@ export interface Employee {
   id: string;
   name: string;
   employeeId: string;
+  designation: string;
   mobileNumber: string;
   email: string;
   role: RoleName;
@@ -52,6 +53,29 @@ export interface Project {
   folders: Folder[];
 }
 
+export type ProfileUser = {
+  user_id: string;
+  emp_id: string;
+  user_name: string;
+  designation: string | null;
+  mobile: string | null;
+  email: string | null;
+  date_of_joining: string | null;
+  user_type: string;
+  status: EmployeeStatus;
+};
+
+export type UpdateProfileInput = {
+  userName: string;
+  mobile: string;
+  email: string;
+};
+
+export type ChangePasswordInput = {
+  currentPassword: string;
+  newPassword: string;
+};
+
 export type EmployeeStatus = 'active' | 'inactive';
 export type TaskStatus = 'Pending' | 'In Progress' | 'Completed' | 'On Hold' | 'Cancelled' | '25% progress complete' | '50% progress complete' | '75% progress complete';
 export type RoleName = 'Administrator' | 'Manager' | 'Project Manager' | 'Employee' | 'Viewer';
@@ -70,7 +94,8 @@ export type RoleId =
   | 'task_view'
   | 'task_create'
   | 'task_edit'
-  | 'task_delete';
+  | 'task_delete'
+  | 'task_view_all';
 
 export interface RoleDefinition {
   id: RoleId;
@@ -88,10 +113,15 @@ export interface TaskReference {
 export interface Task {
   id: string;
   taskId: string;
+  taskName:string;
   projectId?: string;
   projectName?: string;
   description: string;
   assignedTo: {
+    employeeId: string;
+    employeeName: string;
+  };
+  assignedBy:{
     employeeId: string;
     employeeName: string;
   };
@@ -138,6 +168,9 @@ export const SUPPORTED_EXTENSIONS = [
   '.json',
   '.jpg',
   '.jpeg',
+  '.png',
+  '.gif',
+  '.webp',
 ] as const;
 
 export type SupportedExtension = (typeof SUPPORTED_EXTENSIONS)[number];

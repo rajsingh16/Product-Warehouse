@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { pool } from '../db/pool.js';
 import { HttpError } from '../utils/http.js';
+import { verifyPassword } from '../utils/password.js';
 //import { maskPhone, normalizePhone, sendWhatsAppOtp } from './whatsapp.js';
 
 const TTL = 5 * 60 * 1000;
@@ -50,11 +51,7 @@ export async function beginLogin(userId, password) {
 
   const user = result.rows[0];
 
-  if (
-    !user ||
-    !user.password_hash ||
-    password !== user.password_hash
-  ) {
+  if (!user || !(await verifyPassword(password, user.password_hash))) {
     throw new HttpError(401, generic);
   }
 
@@ -115,11 +112,7 @@ export async function replaceSession(userId, password) {
 
   const user = result.rows[0];
 
-  if (
-    !user ||
-    !user.password_hash ||
-    password !== user.password_hash
-  ) {
+  if (!user || !(await verifyPassword(password, user.password_hash))) {
     throw new HttpError(401, generic);
   }
 

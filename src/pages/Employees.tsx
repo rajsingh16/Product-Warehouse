@@ -16,6 +16,7 @@ import { can } from '../utils/authorization';
 type EmployeeFormState = {
   employeeId: string;
   name: string;
+  designation: string;
   mobileNumber: string;
   email: string;
   dateOfJoining: string;
@@ -27,6 +28,7 @@ type EmployeeFormState = {
 const emptyForm: EmployeeFormState = {
   employeeId: '',
   name: '',
+  designation: '',
   mobileNumber: '',
   email: '',
   dateOfJoining: '',
@@ -57,7 +59,7 @@ export function Employees() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [query, setQuery] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
-  const [filters, setFilters] = useState({ employeeId: '', name: '', mobileNumber: '', email: '', status: '' });
+  const [filters, setFilters] = useState({ employeeId: '', name: '', designation: '', mobileNumber: '', email: '', status: '' });
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [deleting, setDeleting] = useState<Employee | null>(null);
@@ -82,12 +84,13 @@ export function Employees() {
     return employees.filter((employee) => {
       const matchesQuery =
         !q ||
-        [employee.employeeId, employee.name, employee.mobileNumber, employee.email, employee.status].some((value) =>
+        [employee.employeeId, employee.name,employee.designation, employee.mobileNumber, employee.email, employee.status].some((value) =>
           value.toLowerCase().includes(q),
         );
       const matchesFilters =
         (!filters.employeeId || employee.employeeId.toLowerCase().includes(filters.employeeId.toLowerCase())) &&
         (!filters.name || employee.name.toLowerCase().includes(filters.name.toLowerCase())) &&
+        (!filters.designation || employee.designation.toLowerCase().includes(filters.designation.toLowerCase())) &&
         (!filters.mobileNumber || employee.mobileNumber.toLowerCase().includes(filters.mobileNumber.toLowerCase())) &&
         (!filters.email || employee.email.toLowerCase().includes(filters.email.toLowerCase())) &&
         (!filters.status || employee.status === filters.status);
@@ -111,6 +114,7 @@ export function Employees() {
     setForm({
       employeeId: employee.employeeId,
       name: employee.name,
+      designation: employee.designation || '',
       mobileNumber: employee.mobileNumber,
       email: employee.email,
       dateOfJoining: employee.dateOfJoining,
@@ -133,7 +137,7 @@ export function Employees() {
     event.preventDefault();
     setError('');
 
-    if (!form.name || !form.mobileNumber || !form.email || !form.dateOfJoining) {
+    if (!form.name ||!form.designation || !form.mobileNumber || !form.email || !form.dateOfJoining) {
       setError('All fields are required.');
       return;
     }
@@ -155,10 +159,9 @@ export function Employees() {
 
     try {
       if (editing) {
-        await employeeService.updateEmployee(editing.id, password ? { ...details, password } : { ...details });
-        showToast(password ? 'Employee updated and password changed.' : 'Employee updated successfully.');
+        await employeeService.updateEmployee(editing.id, { ...details });
+        showToast('Employee updated successfully.');
       } else {
-        // Send payload without employeeId so PostgreSQL generates the sequence value
         await employeeService.createEmployee({ ...details, password });
         showToast('Employee created successfully.');
       }
@@ -244,6 +247,17 @@ export function Employees() {
             }))
           }
           placeholder="Name"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+        />
+        <input
+          value={filters.designation}
+          onChange={(e) =>
+            setFilters((current) => ({
+              ...current,
+              designation: e.target.value,
+            }))
+          }
+          placeholder="Designation"
           className="rounded-md border border-slate-300 px-3 py-2 text-sm"
         />
 
@@ -337,6 +351,7 @@ export function Employees() {
             setFilters({
               employeeId: '',
               name: '',
+              designation: '',
               mobileNumber: '',
               email: '',
               status: '',
@@ -393,6 +408,7 @@ export function Employees() {
             'Actions',
             'Emp ID',
             'Name',
+            'Designation',
             'Mobile Number',
             'Email',
             'Date of Joining',
@@ -414,7 +430,7 @@ export function Employees() {
         {paginatedEmployees.length === 0 ? (
           <tr>
             <td
-              colSpan={7}
+              colSpan={8}
               className="px-4 py-10 text-center text-sm text-slate-500"
             >
               No employees found.
@@ -463,6 +479,10 @@ export function Employees() {
               {/* Name */}
               <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-900">
                 {employee.name}
+              </td>
+              {/* Designation */}
+              <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                {employee.designation || 'Not available'}
               </td>
 
               {/* Mobile */}
@@ -529,6 +549,9 @@ export function Employees() {
 
               <p className="mt-1 break-words text-base font-semibold text-slate-900">
                 {employee.name}
+              </p>
+              <p className="mt-1 break-words text-sm text-slate-600">
+                {employee.designation || 'Designation not available'}
               </p>
 
             </div>
@@ -663,6 +686,7 @@ export function Employees() {
             />
           )}
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Name" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
+          <input value = {form.designation} onChange={(e)=> setForm({ ...form,designation: e.target.value, })} placeholder="Designation" className ="rounded-md border border-slate-300 px-3 py-2 text-sm"/>
           <input value={form.mobileNumber} onChange={(e) => setForm({ ...form, mobileNumber: e.target.value })} placeholder="Mobile Number" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
           <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email" className="rounded-md border border-slate-300 px-3 py-2 text-sm" />
           <input type="date" value={form.dateOfJoining} onChange={(e) => setForm({ ...form, dateOfJoining: e.target.value })} className="rounded-md border border-slate-300 px-3 py-2 text-sm" />

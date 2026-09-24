@@ -70,7 +70,10 @@ export function Header({ title, onOpenSidebar }: { title: string; onOpenSidebar:
           <div className="absolute right-0 z-50 mt-1 w-48 rounded-md border border-slate-200 bg-white py-1 shadow-lg">
             <button
               className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                navigate('/profile');
+              }}
             >
               <User className="h-4 w-4" />
               Profile
