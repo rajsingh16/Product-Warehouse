@@ -78,6 +78,7 @@ export function Header({ title, onOpenSidebar }: { title: string; onOpenSidebar:
               <User className="h-4 w-4" />
               Profile
             </button>
+            {/* =======================================================
             <button
               className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
               onClick={() => setOpen(false)}
@@ -86,6 +87,7 @@ export function Header({ title, onOpenSidebar }: { title: string; onOpenSidebar:
               Settings
             </button>
             <hr className="my-1 border-slate-200" />
+            ======================================================= */}
             <button
               className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
               onClick={handleLogout}

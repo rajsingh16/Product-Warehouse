@@ -515,34 +515,38 @@ export function Employees() {
   </div>
 </div>
 
-
 {/* =======================================================
     MOBILE VIEW
     ======================================================= */}
 <div className="block md:hidden">
-
   {paginatedEmployees.length === 0 ? (
-
     <div className="px-4 py-10 text-center text-sm text-slate-500">
       No employees found.
     </div>
-
   ) : (
-
-    <div className="divide-y divide-slate-200">
-
+    /*
+     * IMPORTANT:
+     * This is the only area that should scroll on mobile.
+     */
+    <div
+      className="
+        max-h-[calc(100vh-430px)]
+        overflow-y-auto
+        overscroll-contain
+        divide-y divide-slate-200
+        rounded-lg
+        border border-slate-200
+        bg-white
+      "
+    >
       {paginatedEmployees.map((employee) => (
-
         <div
           key={employee.id}
           className="p-4"
         >
-
           {/* Employee Header */}
           <div className="flex items-start justify-between gap-3">
-
             <div className="min-w-0 flex-1">
-
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 Employee
               </p>
@@ -550,22 +554,19 @@ export function Employees() {
               <p className="mt-1 break-words text-base font-semibold text-slate-900">
                 {employee.name}
               </p>
+
               <p className="mt-1 break-words text-sm text-slate-600">
                 {employee.designation || 'Designation not available'}
               </p>
-
             </div>
 
             <div className="shrink-0">
               <StatusBadge status={employee.status} />
             </div>
-
           </div>
-
 
           {/* Employee ID */}
           <div className="mt-4">
-
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
               Employee ID
             </p>
@@ -573,13 +574,10 @@ export function Employees() {
             <p className="mt-1 break-words text-sm font-medium text-slate-900">
               {employee.employeeId}
             </p>
-
           </div>
-
 
           {/* Mobile Number + Date */}
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 Mobile Number
@@ -599,13 +597,10 @@ export function Employees() {
                 {formatDate(employee.dateOfJoining)}
               </p>
             </div>
-
           </div>
-
 
           {/* Email */}
           <div className="mt-4">
-
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
               Email
             </p>
@@ -613,13 +608,10 @@ export function Employees() {
             <p className="mt-1 break-all text-sm text-slate-700">
               {employee.email || 'Not available'}
             </p>
-
           </div>
-
 
           {/* Actions */}
           <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-
             {can(user, 'employees:edit') && (
               <Button
                 variant="secondary"
@@ -641,19 +633,12 @@ export function Employees() {
                 Delete
               </Button>
             )}
-
           </div>
-
         </div>
-
       ))}
-
     </div>
-
   )}
-
 </div>
-
 
 {/* =======================================================
     PAGINATION
