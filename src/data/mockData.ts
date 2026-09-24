@@ -86,8 +86,10 @@ export const mockTasks: Task[] = [
   {
     id: 'task-1',
     taskId: 'TASK001',
+    taskName: 'Prepare report',
     description: 'Prepare report',
     assignedTo: { employeeId: 'EMP001', employeeName: 'Raj Singh' },
+    assignedBy: { employeeId: 'EMP001', employeeName: 'Raj Singh' },
     assignedOn: '2026-08-22',
     referenceLink: { kind: 'url', label: 'Project brief', url: 'https://example.com/project-brief' },
     comments: 'Project documentation and final report preparation for the current release cycle.',
@@ -96,8 +98,10 @@ export const mockTasks: Task[] = [
   {
     id: 'task-2',
     taskId: 'TASK002',
+    taskName: 'Review analysis data',
     description: 'Review analysis data',
     assignedTo: { employeeId: 'EMP003', employeeName: 'Sarah Smith' },
+    assignedBy: { employeeId: 'EMP001', employeeName: 'Raj Singh' },
     assignedOn: '2026-08-21',
     comments: 'Validate all uploaded analysis files and flag missing metadata before project closure.',
     status: 'In Progress',

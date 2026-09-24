@@ -16,6 +16,7 @@ import { Projects } from './pages/Projects';
 import { Tasks } from './pages/Tasks';
 import { TaskMaster } from './pages/TaskMaster';
 import { UserRole } from './pages/UserRole';
+import Profile from './pages/Profile';
 
 function RootRedirect() {
   const { isAuthenticated } = useAuth();
@@ -35,6 +36,7 @@ function AppRoutes() {
         }
       >
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/profile" element={<Profile />} />
         <Route element={<AdministratorRoute />}>
           <Route path="/master/task-master" element={<TaskMaster />} />
         </Route>

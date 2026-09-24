@@ -11,10 +11,10 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { formatDate } from '../data/mockData';
 import { employeeService } from '../services/employeeService';
-import { taskService } from '../services/taskService';
+import { taskService, taskMasterService } from '../services/taskService';
 import type { Employee, Project, Task, TaskStatus } from '../types';
 import { can } from '../utils/authorization';
-import { taskMasterService } from '../services/taskService';
+import type  { TaskInput  } from '../services/taskService';
 import { projectService } from '../services/projectService';
 const statuses: TaskStatus[] = ['Pending', 'In Progress', 'Completed', 'On Hold', 'Cancelled', '25% progress complete', '50% progress complete', '75% progress complete'];
 
@@ -134,21 +134,43 @@ projectService.getProjects(),
     setModalOpen(true);
   };
 
-  const toTaskInput = (): Omit<Task, 'id'> => {
-    const employee = employees.find((item) => item.employeeId === form.employeeId);
-    if (!employee) throw new Error('Assigned employee is required.');
-    if (!taskMaster.some((item) => item.taskId === form.taskId)) throw new Error('Select an active Task Master record.');
+  const toTaskInput = (): TaskInput => {
+    const employee = employees.find(
+      (item) => item.employeeId === form.employeeId
+    );
+  
+    if (!employee) {
+      throw new Error('Assigned employee is required.');
+    }
+  
+    if (!taskMaster.some((item) => item.taskId === form.taskId)) {
+      throw new Error('Select an active Task Master record.');
+    }
+  
     return {
       projectId: form.projectId,
+  
       taskId: form.taskId,
+  
       description: form.description,
-      assignedTo: { employeeId: employee.employeeId, employeeName: employee.name },
+  
+      assignedTo: {
+        employeeId: employee.employeeId,
+        employeeName: employee.name,
+      },
+  
       assignedOn: form.assignedOn,
+  
       referenceLink: form.referenceUrl
-          ? { kind: 'url', label: form.referenceUrl, url: form.referenceUrl }
-          : undefined,
-      //referenceDocument: form.referenceFile ?? undefined,
+        ? {
+            kind: 'url',
+            label: form.referenceUrl,
+            url: form.referenceUrl,
+          }
+        : undefined,
+  
       comments: form.comments,
+  
       status: form.status,
     };
   };
@@ -175,9 +197,12 @@ projectService.getProjects(),
   const exportRows = visibleTasks.map((task) => ({
     Project: task.projectName ?? '',
     'Task ID': task.taskId,
+    'Task Name': task.taskName,
     Description: task.description,
-    'Employee ID': task.assignedTo.employeeId,
-    'Employee Name': task.assignedTo.employeeName,
+    'Assigned To ID': task.assignedTo.employeeId,
+    'Assigned To Name': task.assignedTo.employeeName,
+    'Assigned By ID': task.assignedBy.employeeId,
+    'Assigned By Name': task.assignedBy.employeeName,
     'Assigned On': task.assignedOn,
     'Reference Link': task.referenceLink?.url ?? task.referenceLink?.label ?? '',
     Comments: task.comments,
@@ -332,6 +357,7 @@ projectService.getProjects(),
                     'Select Task',
                     'Description',
                     'Assigned To',
+                    'Assigned By',
                     'Assigned On',
                     'Reference Link',
                     'Comments',
@@ -386,7 +412,7 @@ projectService.getProjects(),
 
                     {/* Task */}
                     <td className="px-4 py-3 text-slate-600">
-                      {task.taskId}
+                      {task.taskId} -{task.taskName}
                     </td>
 
                     {/* Description */}
@@ -398,8 +424,15 @@ projectService.getProjects(),
 
                     {/* Assigned To */}
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                      {task.assignedTo.employeeId} -{' '}
-                      {task.assignedTo.employeeName}
+                      {task.assignedTo.employeeId && task.assignedTo.employeeName
+                        ? `${task.assignedTo.employeeId} - ${task.assignedTo.employeeName}`
+                        : task.assignedTo.employeeId || 'Unassigned'}
+                    </td>
+                    {/* Assigned By */}
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                      {task.assignedBy.employeeId && task.assignedBy.employeeName
+                        ? `${task.assignedBy.employeeId} - ${task.assignedBy.employeeName}`
+                        : task.assignedBy.employeeId || 'Not available'}
                     </td>
 
                     {/* Assigned On */}
@@ -482,7 +515,7 @@ projectService.getProjects(),
                       Task
                     </p>
                     <p className="mt-1 text-sm font-medium text-slate-900">
-                      {task.taskId}
+                      {task.taskId} - {task.taskName}
                     </p>
                   </div>
 
@@ -503,7 +536,20 @@ projectService.getProjects(),
                         Assigned To
                       </p>
                       <p className="mt-1 break-words text-sm text-slate-700">
-                        {task.assignedTo.employeeId} - {task.assignedTo.employeeName}
+                        {task.assignedTo.employeeId && task.assignedTo.employeeName
+                          ? `${task.assignedTo.employeeId} - ${task.assignedTo.employeeName}`
+                          : task.assignedTo.employeeId || 'Unassigned'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Assigned By
+                      </p>
+
+                      <p className="mt-1 break-words text-sm text-slate-700">
+                        {task.assignedBy.employeeId && task.assignedBy.employeeName
+                          ? `${task.assignedBy.employeeId} - ${task.assignedBy.employeeName}`
+                          : task.assignedBy.employeeId || 'Not available'}
                       </p>
                     </div>
 

@@ -8,7 +8,7 @@ const allowedPermissions = new Set([
   'document_view','document_upload','document_delete', 
   'employee_view', 'employee_create', 
   'user_view', 'user_create', 'user_assign',
-  'task_view', 'task_create', 'task_edit', 'task_delete',
+  'task_view', 'task_create', 'task_edit', 'task_delete','task_view_all',
 ]);
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -28,6 +28,7 @@ function bodyUser(body, id = body.userId) {
     // Made optional: preserves incoming empId if provided (e.g. during updates), otherwise stays undefined
     empId: optionalString(body.empId, 'empId'),
     userName: requiredString(body.userName, 'userName'),
+    designation: optionalString(body.designation, 'designation'),
     mobile: optionalString(body.mobile, 'mobile'),
     email: requiredString(body.email, 'email'),
     dateOfJoining: optionalString(body.dateOfJoining, 'dateOfJoining'),
@@ -45,6 +46,7 @@ function bodyCreateUser(body) {
     // Made optional: if body.empId is omitted/empty, it evaluates to undefined, allowing PostgreSQL to assign the default sequence
     empId: optionalString(body.empId, 'empId'),
     userName: requiredString(body.userName, 'userName'),
+    designation: optionalString(body.designation, 'designation'),
     mobile: optionalString(body.mobile, 'mobile'),
     email: requiredString(body.email, 'email'),
     dateOfJoining: optionalString(body.dateOfJoining, 'dateOfJoining'),
@@ -102,6 +104,7 @@ export const usersController = {
       userId: input.userId,
       empId: input.empId,
       userName: input.userName,
+      designation: input.designation,
       mobile: input.mobile,
       email: input.email,
       dateOfJoining: input.dateOfJoining,
@@ -263,7 +266,16 @@ export const taskMasterController = {
     const result = await taskMasterRepository.list({ search: optionalString(req.query.search, 'search'), includeInactive, pageSize, offset });
     paginatedResponse(res, result.rows, page, pageSize, result.total);
   },
-  async create(req, res) { res.status(201).json({ success: true, data: await taskMasterRepository.create(bodyTaskMaster(req.body)) }); },
+  async create(req, res) {
+    const task = bodyTaskMaster(req.body);
+  
+    const created = await taskMasterRepository.create(task);
+  
+    res.status(201).json({
+      success: true,
+      data: created,
+    });
+  },
   async update(req, res) {
     const task = await taskMasterRepository.update(req.params.id, bodyTaskMaster(req.body, req.params.id));
     if (!task) throw new HttpError(404, 'Task master record not found');
@@ -278,20 +290,17 @@ export const taskMasterController = {
 export const tasksController = {
   async list(req, res) {
     const { page, pageSize, offset } = parsePagination(req.query);
-    const assignedTo =
-      req.user.user_type === 'Administrator'
+
+    const canViewAll =
+      req.user.user_type === 'Administrator' ||
+      (Array.isArray(req.user.permissions) &&
+        req.user.permissions.includes('task_view_all'));
+
+    const assignedTo = canViewAll
       ? undefined
       : req.user.emp_id;
-    const result = await tasksRepository.list({ search: optionalString(req.query.search, 'search'), status: optionalString(req.query.status, 'status'), projectId: optionalString(req.query.projectId, 'projectId'),assignedTo, pageSize, offset });
-    paginatedResponse(res, result.rows, page, pageSize, result.total);
-  },
-  async get(req, res) {
-    const task = await tasksRepository.get(requiredString(req.params.id, 'id'),assignedTo);
-    const assignedTo =
-      req.user.user_type === 'Administrator'
-      ? undefined
-      : req.user.emp_id;
-    const result = await taskMasterRepository.list({
+
+    const result = await tasksRepository.list({
       search: optionalString(req.query.search, 'search'),
       status: optionalString(req.query.status, 'status'),
       projectId: optionalString(req.query.projectId, 'projectId'),
@@ -299,6 +308,7 @@ export const tasksController = {
       pageSize,
       offset,
     });
+
     paginatedResponse(
       res,
       result.rows,
@@ -307,45 +317,151 @@ export const tasksController = {
       result.total
     );
   },
+
   async get(req, res) {
-    const assignedTo =
-      req.user.user_type === 'Administrator'
-        ? undefined
-        : req.user.emp_id;
+    const canViewAll =
+      req.user.user_type === 'Administrator' ||
+      (Array.isArray(req.user.permissions) &&
+        req.user.permissions.includes('task_view_all'));
+
+    const assignedTo = canViewAll
+      ? undefined
+      : req.user.emp_id;
 
     const task = await tasksRepository.get(
       requiredString(req.params.id, 'id'),
       assignedTo
     );
 
-    if (!task) throw new HttpError(404, 'Task not found');
-    res.json({ success: true, data: task });
+    if (!task) {
+      throw new HttpError(404, 'Task not found');
+    }
+
+    res.json({
+      success: true,
+      data: task,
+    });
   },
-  async create(req, res) { res.status(201).json({ success: true, data: await tasksRepository.create(bodyTask(req.body)) }); },
+
+  async create(req, res) {
+    const task = bodyTask(req.body);
+
+    const createdTask = await tasksRepository.create({
+      ...task,
+      assignedBy: req.user.emp_id,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: createdTask,
+    });
+  },
+
   async update(req, res) {
-    const task = await tasksRepository.update(req.params.id, bodyTask(req.body, req.params.id));
-    if (!task) throw new HttpError(404, 'Task not found');
-    res.json({ success: true, data: task });
+    const task = await tasksRepository.update(
+      req.params.id,
+      bodyTask(req.body, req.params.id)
+    );
+
+    if (!task) {
+      throw new HttpError(404, 'Task not found');
+    }
+
+    res.json({
+      success: true,
+      data: task,
+    });
   },
+
   async remove(req, res) {
-    if (!(await tasksRepository.remove(requiredString(req.params.id, 'id')))) throw new HttpError(404, 'Task not found');
+    if (
+      !(await tasksRepository.remove(
+        requiredString(req.params.id, 'id')
+      ))
+    ) {
+      throw new HttpError(404, 'Task not found');
+    }
+
     res.status(204).send();
   },
-  async assignments(req, res) { res.json({ success: true, data: await tasksRepository.assignments(requiredString(req.params.id, 'id')) }); },
-  async assign(req, res) { res.status(201).json({ success: true, data: await tasksRepository.assign(req.params.id, requiredString(req.body.userId, 'userId')) }); },
-  async updateAssignment(req, res) {
-    const assignedOn = requiredString(req.body.assignedOn, 'assignedOn');
-    if (Number.isNaN(Date.parse(assignedOn))) throw new HttpError(400, 'assignedOn must be a valid date');
-    const assignment = await tasksRepository.updateAssignment(req.params.id, requiredString(req.params.userId, 'userId'), assignedOn);
-    if (!assignment) throw new HttpError(404, 'Task assignment not found');
-    res.json({ success: true, data: assignment });
+
+  async assignments(req, res) {
+    res.json({
+      success: true,
+      data: await tasksRepository.assignments(
+        requiredString(req.params.id, 'id')
+      ),
+    });
   },
+
+  async assign(req, res) {
+    const result = await tasksRepository.assign(
+      req.params.id,
+      requiredString(req.body.userId, 'userId')
+    );
+
+    if (!result) {
+      throw new HttpError(404, 'Task not found');
+    }
+
+    res.status(201).json({
+      success: true,
+      data: result,
+    });
+  },
+
+  async updateAssignment(req, res) {
+    const assignedOn = requiredString(
+      req.body.assignedOn,
+      'assignedOn'
+    );
+
+    if (Number.isNaN(Date.parse(assignedOn))) {
+      throw new HttpError(
+        400,
+        'assignedOn must be a valid date'
+      );
+    }
+
+    const assignment =
+      await tasksRepository.updateAssignment(
+        req.params.id,
+        requiredString(req.params.userId, 'userId'),
+        assignedOn
+      );
+
+    if (!assignment) {
+      throw new HttpError(
+        404,
+        'Task assignment not found'
+      );
+    }
+
+    res.json({
+      success: true,
+      data: assignment,
+    });
+  },
+
   async unassign(req, res) {
-    if (!(await tasksRepository.unassign(req.params.id, requiredString(req.params.userId, 'userId')))) throw new HttpError(404, 'Task assignment not found');
+    if (
+      !(await tasksRepository.unassign(
+        req.params.id,
+        requiredString(req.params.userId, 'userId')
+      ))
+    ) {
+      throw new HttpError(
+        404,
+        'Task assignment not found'
+      );
+    }
+
     res.status(204).send();
   },
 };
 
 export const permissionsController = {
-  async list(_req, res) { res.json({ success: true, data: await permissionsRepository.list() }); },
+  async list(_req, res) {
+    res.json({ success: true, data: await permissionsRepository.list() });
+  },
 };

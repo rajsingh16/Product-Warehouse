@@ -94,18 +94,23 @@ CREATE TABLE IF NOT EXISTS task_user_mapping (
     reference_document TEXT,
     assigned_to VARCHAR(100),
     assigned_on DATE,
+    assigned_by VARCHAR(100),
     CONSTRAINT task_user_mapping_task_fk
         FOREIGN KEY (pid) REFERENCES task_master (task_id),
     CONSTRAINT task_user_mapping_project_fk
-        FOREIGN KEY (project_id) REFERENCES projects (project_id) ON DELETE CASCADE
+        FOREIGN KEY (project_id) REFERENCES projects (project_id) ON DELETE CASCADE,
+    CONSTRAINT task_user_mapping_assigned_by_fk
+        FOREIGN KEY (assigned_by) REFERENCES users (emp_id)
 );
 
 -- Additive column/constraint updates for existing task_user_mapping instances
 ALTER TABLE task_user_mapping ADD COLUMN IF NOT EXISTS project_id TEXT;
+ALTER TABLE task_user_mapping ADD COLUMN IF NOT EXISTS assigned_by VARCHAR(100);
 
 CREATE INDEX IF NOT EXISTS idx_task_user_mapping_pid ON task_user_mapping (pid);
 CREATE INDEX IF NOT EXISTS idx_task_user_mapping_assigned_to ON task_user_mapping (assigned_to);
 CREATE INDEX IF NOT EXISTS idx_task_user_mapping_project_id ON task_user_mapping (project_id);
+CREATE INDEX IF NOT EXISTS idx_task_user_mapping_assigned_by ON task_user_mapping (assigned_by);
 
 -- 8. PROJECT FOLDERS
 CREATE TABLE IF NOT EXISTS project_folders (

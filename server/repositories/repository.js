@@ -18,13 +18,22 @@ export const usersRepository = {
     const filters = [];
     if (search) {
       values.push(`%${search}%`);
-      filters.push(`(u.user_id ILIKE $${values.length} OR u.emp_id ILIKE $${values.length} OR u.user_name ILIKE $${values.length} OR u.email ILIKE $${values.length})`);
+      filters.push(
+        `(u.user_id ILIKE $${values.length} 
+        OR u.emp_id ILIKE $${values.length} 
+        OR u.user_name ILIKE $${values.length} 
+        OR u.designation ILIKE $${values.length} 
+        OR u.email ILIKE $${values.length})`);
     }
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
     const count = await pool.query(`SELECT COUNT(*)::int AS total FROM users u ${where}`, values);
     values.push(pageSize, offset);
     const result = await pool.query(
-      `SELECT u.user_id, u.emp_id, u.user_name, u.mobile, u.email, u.date_of_joining, u.user_type,
+      `SELECT u.user_id, 
+              u.emp_id, 
+              u.user_name, 
+              u.designation,
+              u.mobile, u.email, u.date_of_joining, u.user_type,
               COALESCE(array_agg(up.permission_code) FILTER (WHERE up.permission_code IS NOT NULL), '{}') AS permissions
          FROM users u LEFT JOIN user_permissions up ON up.user_id = u.user_id
         ${where} GROUP BY u.user_id ORDER BY u.user_id LIMIT $${values.length - 1} OFFSET $${values.length}`,
@@ -35,7 +44,11 @@ export const usersRepository = {
 
   async get(id) {
     const result = await pool.query(
-      `SELECT u.user_id, u.emp_id, u.user_name, u.mobile, u.email, u.date_of_joining, u.user_type,
+      `SELECT u.user_id, 
+              u.emp_id, 
+              u.user_name, 
+              u.designation,
+              u.mobile, u.email, u.date_of_joining, u.user_type,
               COALESCE(array_agg(up.permission_code) FILTER (WHERE up.permission_code IS NOT NULL), '{}') AS permissions
          FROM users u LEFT JOIN user_permissions up ON up.user_id = u.user_id
         WHERE u.user_id = $1 GROUP BY u.user_id`, [id],
@@ -48,17 +61,19 @@ export const usersRepository = {
       `INSERT INTO users (
          user_id,
          user_name,
+         designation,
          mobile,
          email,
          date_of_joining,
          user_type,
          password_hash
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING
          user_id,
          emp_id,
          user_name,
+         designation,
          mobile,
          email,
          date_of_joining,
@@ -66,6 +81,7 @@ export const usersRepository = {
       [
         user.userId,
         user.userName,
+        user.designation,
         user.mobile,
         user.email,
         user.dateOfJoining,
@@ -81,16 +97,18 @@ export const usersRepository = {
     const result = await pool.query(
       `UPDATE users
           SET user_name = $2,
-              mobile = $3,
-              email = $4,
-              date_of_joining = $5,
-              user_type = $6,
-              password_hash = COALESCE($7, password_hash)
+              designation = $3,
+              mobile = $4,
+              email = $5,
+              date_of_joining = $6,
+              user_type = $7,
+              password_hash = COALESCE($8, password_hash)
         WHERE user_id = $1
         RETURNING
           user_id,
           emp_id,
           user_name,
+          designation,
           mobile,
           email,
           date_of_joining,
@@ -98,6 +116,7 @@ export const usersRepository = {
       [
         id,
         user.userName,
+        user.designation,
         user.mobile,
         user.email,
         user.dateOfJoining,
@@ -105,7 +124,7 @@ export const usersRepository = {
         user.passwordHash,
       ],
     );
-
+  
     return result.rows[0] ?? null;
   },
 
@@ -325,20 +344,32 @@ export const taskMasterRepository = {
   async list({ search, includeInactive, pageSize, offset }) {
     const values = [];
     const filters = [];
-    if (search) { values.push(`%${search}%`); filters.push(`(task_id ILIKE $${values.length} OR task_name ILIKE $${values.length})`); }
+    if (search) {
+      values.push(`%${search}%`);
+      filters.push(`(task_id ILIKE $${values.length} OR task_name ILIKE $${values.length})`);
+    }
     if (!includeInactive) filters.push("status = 'A'");
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
     const count = await pool.query(`SELECT COUNT(*)::int AS total FROM task_master ${where}`, values);
     values.push(pageSize, offset);
-    const result = await pool.query(`SELECT task_id, task_name, status FROM task_master ${where} ORDER BY task_id LIMIT $${values.length - 1} OFFSET $${values.length}`, values);
+    const result = await pool.query(
+      `SELECT task_id, task_name, status FROM task_master ${where} ORDER BY task_id LIMIT $${values.length - 1} OFFSET $${values.length}`,
+      values
+    );
     return { rows: result.rows, total: count.rows[0].total };
   },
   async create(task) {
-    const result = await pool.query('INSERT INTO task_master (task_name, status) VALUES ($1, $2) RETURNING *', [task.taskName, task.status === 'Active' ? 'A' : 'I']);
+    const result = await pool.query(
+      'INSERT INTO task_master (task_name, status) VALUES ($1, $2) RETURNING *',
+      [task.taskName, task.status === 'Active' ? 'A' : 'I']
+    );
     return result.rows[0];
   },
   async update(id, task) {
-    const result = await pool.query('UPDATE task_master SET task_name = $2, status = $3 WHERE task_id = $1 RETURNING *', [id, task.taskName, task.status === 'Active' ? 'A' : 'I']);
+    const result = await pool.query(
+      'UPDATE task_master SET task_name = $2, status = $3 WHERE task_id = $1 RETURNING *',
+      [id, task.taskName, task.status === 'Active' ? 'A' : 'I']
+    );
     return result.rows[0] ?? null;
   },
   async remove(id) {
@@ -353,11 +384,14 @@ export const tasksRepository = {
     const filters = [];
     if (search) { values.push(`%${search}%`); filters.push(`
     (CAST(m.pid AS TEXT) ILIKE $${values.length} 
-    OR m.description ILIKE $${values.length} 
     OR tm.task_name ILIKE $${values.length}
+    OR m.description ILIKE $${values.length} 
     OR p.project_id ILIKE $${values.length}
     OR p.project_name ILIKE $${values.length}
     OR m.assigned_to ILIKE $${values.length}
+    OR assigned_user.user_name ILIKE $${values.length}
+    OR m.assigned_by ILIKE $${values.length}
+    OR assigning_user.user_name ILIKE $${values.length}
     )`); }
     if (status) { values.push(status); 
     filters.push(`m.status = $${values.length}`); 
@@ -379,45 +413,123 @@ export const tasksRepository = {
       ON tm.task_id = m.pid
     LEFT JOIN projects p
       ON p.project_id = m.project_id
+    LEFT JOIN users assigned_user
+      ON assigned_user.emp_id = m.assigned_to
+    LEFT JOIN users assigning_user
+      ON assigning_user.emp_id = m.assigned_by
     ${where}`, values);
     values.push(pageSize, offset);
     const result = await pool.query(
       `
-      SELECT 
-        m.id, 
-        m.pid AS task_id, 
-        m.project_id, 
-        p.project_name, 
-        m.description, 
-        m.status, 
-        m.reference_link, 
-        m.reference_document, 
-        m.assigned_to, 
-        m.assigned_on, 
-        tm.task_name
-       FROM task_user_mapping m 
-       JOIN task_master tm 
-         ON tm.task_id = m.pid 
-       LEFT JOIN projects p
-         ON p.project_id = m.project_id
-       ${where}
-        ORDER BY m.assigned_on DESC NULLS LAST, m.id DESC LIMIT $${values.length - 1} OFFSET $${values.length}`,
-      values,
+      SELECT
+        m.id,
+        m.pid AS task_id,
+        tm.task_name,
+    
+        m.project_id,
+        p.project_name,
+    
+        m.description,
+        m.status,
+        m.reference_link,
+        m.reference_document,
+    
+        m.assigned_to,
+        assigned_user.user_name AS assigned_to_name,
+    
+        m.assigned_by,
+        assigning_user.user_name AS assigned_by_name,
+    
+        m.assigned_on
+    
+      FROM task_user_mapping m
+    
+      JOIN task_master tm
+        ON tm.task_id = m.pid
+    
+      LEFT JOIN projects p
+        ON p.project_id = m.project_id
+    
+      LEFT JOIN users assigned_user
+        ON assigned_user.emp_id = m.assigned_to
+    
+      LEFT JOIN users assigning_user
+        ON assigning_user.emp_id = m.assigned_by
+    
+      ${where}
+    
+      ORDER BY
+        m.assigned_on DESC NULLS LAST,
+        m.id DESC
+    
+      LIMIT $${values.length - 1}
+      OFFSET $${values.length}
+      `,
+      values
     );
     return { rows: result.rows, total: count.rows[0].total };
   },
   async get(id, assignedTo) {
-    const values =[id];
-    let assignedFilter ='';
-    if (assignedTo){
+    const values = [id];
+  
+    let assignedFilter = '';
+  
+    if (assignedTo) {
       values.push(assignedTo);
-      assignedFilter =`AND m.assigned_to = $${values.length}`;
+  
+      assignedFilter = `
+        AND m.assigned_to = $${values.length}
+      `;
     }
-    const result = await pool.query('SELECT m.id, m.pid AS task_id, m.project_id,p.project_name, m.description, m.status, m.reference_link, m.reference_document, m.assigned_to, m.assigned_on, tm.task_name FROM task_user_mapping m JOIN task_master tm ON tm.task_id = m.pid LEFT JOIN projects p ON p.project_id = m.project_id WHERE m.id = $1 ${assignedFilter}', values);
+  
+    const result = await pool.query(
+      `
+      SELECT
+        m.id,
+        m.pid AS task_id,
+        tm.task_name,
+  
+        m.project_id,
+        p.project_name,
+  
+        m.description,
+        m.status,
+        m.reference_link,
+        m.reference_document,
+  
+        m.assigned_to,
+        assigned_user.user_name AS assigned_to_name,
+  
+        m.assigned_by,
+        assigning_user.user_name AS assigned_by_name,
+  
+        m.assigned_on
+  
+      FROM task_user_mapping m
+  
+      JOIN task_master tm
+        ON tm.task_id = m.pid
+  
+      LEFT JOIN projects p
+        ON p.project_id = m.project_id
+  
+      LEFT JOIN users assigned_user
+        ON assigned_user.emp_id = m.assigned_to
+  
+      LEFT JOIN users assigning_user
+        ON assigning_user.emp_id = m.assigned_by
+  
+      WHERE m.id = $1
+      ${assignedFilter}
+      `,
+      values
+    );
+  
     return result.rows[0] ?? null;
   },
   async create(task) {
-    const result = await pool.query('INSERT INTO task_user_mapping (pid, project_id, description, status, reference_link, reference_document, assigned_to, assigned_on) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *', [task.taskId,task.projectId, task.description, task.status, task.referenceLink, task.referenceDocument, task.assignedTo, task.assignedOn]);
+    const result = await pool.query('INSERT INTO task_user_mapping (pid, project_id, description, status, reference_link, reference_document, assigned_to, assigned_on, assigned_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *', 
+      [task.taskId,task.projectId, task.description, task.status, task.referenceLink, task.referenceDocument, task.assignedTo, task.assignedOn, task.assignedBy]);
     return result.rows[0];
   },
   async update(id, task) {
