@@ -159,10 +159,9 @@ export function Employees() {
 
     try {
       if (editing) {
-        await employeeService.updateEmployee(editing.id, password ? { ...details, password } : { ...details });
-        showToast(password ? 'Employee updated and password changed.' : 'Employee updated successfully.');
+        await employeeService.updateEmployee(editing.id, { ...details });
+        showToast('Employee updated successfully.');
       } else {
-        // Send payload without employeeId so PostgreSQL generates the sequence value
         await employeeService.createEmployee({ ...details, password });
         showToast('Employee created successfully.');
       }

@@ -4,7 +4,7 @@ import { ChevronRight, KeyRound, Pencil } from 'lucide-react';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/common/Button';
 import { StatusBadge } from '../components/common/StatusBadge';
-import ChangePasswordModal from '../components/profile/ChangePasswordModal';
+import { ChangePasswordModal } from '../components/profile/ChangePasswordModal';
 import { profileService } from '../services/profileService';
 import { useToast } from '../context/ToastContext';
 import type { ProfileUser } from '../types';
@@ -131,8 +131,8 @@ export default function Profile() {
                     {error && <p className="text-sm text-red-600">{error}</p>}
                     <div className="flex justify-end gap-3">
                       <Button variant="secondary" onClick={() => setEditing(false)} disabled={saving}>Cancel</Button>
-                      <Button variant="primary" onClick={save} disabled={saving}>
-                        {saving ? 'Saving...' : 'Save changes'}
+                      <Button onClick={save} isLoading={saving}>
+                        Save changes
                       </Button>
                     </div>
                   </div>
@@ -172,7 +172,7 @@ export default function Profile() {
                     Keep your account secure by regularly updating your password.
                   </p>
                   <div className="mt-4">
-                    <Button variant="primary" onClick={() => setPwOpen(true)}>
+                    <Button onClick={() => setPwOpen(true)}>
                       <KeyRound size={14} className="mr-1.5 inline" />
                       Change Password
                     </Button>

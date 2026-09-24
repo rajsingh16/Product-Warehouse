@@ -1,7 +1,7 @@
 import { permissionsRepository, projectsRepository, taskMasterRepository, tasksRepository, usersRepository } from '../repositories/repository.js';
 import { HttpError, paginatedResponse, parsePagination, permissionList, requiredString, optionalString } from '../utils/http.js';
 import { foldersController } from './foldersController.js';
-import bcrypt from 'bcrypt';
+
 
 const allowedPermissions = new Set([
   'project_view', 'project_create','project_delete',
@@ -36,7 +36,7 @@ function bodyUser(body, id = body.userId) {
       ? body.userType
       : (() => { throw new HttpError(400, 'userType must be Administrator or User'); })(),
     // On create: required. On update: optional — omitted/blank means "keep current".
-    password: body.password ? validatedPassword(body.password) : undefined,
+    //password: body.password ? validatedPassword(body.password) : undefined,
   };
 }
 
@@ -58,7 +58,7 @@ function bodyCreateUser(body) {
             'userType must be Administrator or User'
           );
         })(),
-    password: requiredString(body.password, 'password'),
+        password: validatedPassword(body.password),
   };
 }
 
@@ -98,7 +98,7 @@ export const usersController = {
   async create(req, res) {
     const input = bodyCreateUser(req.body);
   
-    const passwordHash = input.password;
+    const passwordHash = await hashPassword(input.password);
   
     const user = await usersRepository.create({
       userId: input.userId,
@@ -118,15 +118,14 @@ export const usersController = {
     });
   },
   async update(req, res) {
-  const input = bodyUser(req.body, req.params.id);
-  const { password, ...details } = input;
-  const user = await usersRepository.update(requiredString(req.params.id, 'id'), {
-    ...details,
-    passwordHash: password ? await bcrypt.hash(password, 12) : null,
-  });
-  if (!user) throw new HttpError(404, 'User not found');
-  res.json({ success: true, data: user });
-},
+    const details = bodyUser(req.body, req.params.id);
+    const user = await usersRepository.update(requiredString(req.params.id, 'id'), {
+      ...details,
+      passwordHash: null, // passwords change only via PUT /api/profile/password
+    });
+    if (!user) throw new HttpError(404, 'User not found');
+    res.json({ success: true, data: user });
+  },
   async remove(req, res) {
     if (!(await usersRepository.remove(requiredString(req.params.id, 'id')))) throw new HttpError(404, 'User not found');
     res.status(204).send();

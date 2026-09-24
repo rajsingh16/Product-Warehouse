@@ -21,9 +21,7 @@ type CreateEmployeeInput = {
   password: string;
 };
 
-type UpdateEmployeeInput = Partial<Employee> & {
-  password?: string;
-};
+type UpdateEmployeeInput = Partial<Employee>;
 function mapUser(user: ApiUser): Employee { return { id: user.user_id, employeeId: user.emp_id, name: user.user_name,designation: user.designation ?? '', mobileNumber: user.mobile ?? '', email: user.email, dateOfJoining: user.date_of_joining ?? '', role: (user.user_type === 'Administrator' ? 'Administrator' : 'Employee') as RoleName, status: 'active', projectIds: [] }; }
 
 export const employeeService = {
@@ -80,7 +78,7 @@ export const employeeService = {
       email: input.email ?? current.email,
       dateOfJoining: input.dateOfJoining ?? current.date_of_joining,
       userType: current.user_type,
-      ...(input.password && { password: input.password }),
+      //...(input.password && { password: input.password }),
     };
   
     const user = await apiRequest<ApiUser>(

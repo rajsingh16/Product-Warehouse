@@ -5,29 +5,30 @@ import { Button } from '../common/Button';
 import { profileService } from '../../services/profileService';
 import { useToast } from '../../context/ToastContext';
 
+
 type Props = { isOpen: boolean; onClose: () => void };
 type Field = 'current' | 'next' | 'confirm';
-
+ 
 const EMPTY = { current: '', next: '', confirm: '' };
-
-export default function ChangePasswordModal({ isOpen, onClose }: Props) {
+ 
+export function ChangePasswordModal({ isOpen, onClose }: Props) {
   const { showToast } = useToast();
   const [values, setValues] = useState(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [visible, setVisible] = useState<Record<Field, boolean>>({ current: false, next: false, confirm: false });
   const [saving, setSaving] = useState(false);
-
+ 
   const reset = () => {
     setValues(EMPTY);
     setErrors({});
     setVisible({ current: false, next: false, confirm: false });
   };
-
+ 
   const close = () => {
     reset();
     onClose();
   };
-
+ 
   const validate = () => {
     const e: Partial<Record<Field, string>> = {};
     if (!values.current) e.current = 'Current password is required.';
@@ -39,7 +40,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
     setErrors(e);
     return Object.keys(e).length === 0;
   };
-
+ 
   const submit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
@@ -57,7 +58,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
       setSaving(false);
     }
   };
-
+ 
   const renderField = (field: Field, label: string, autoComplete: string) => (
     <div>
       <label htmlFor={`pw-${field}`} className="block text-sm font-medium text-gray-700 mb-1">
@@ -86,7 +87,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
       {errors[field] && <p className="mt-1 text-xs text-red-600">{errors[field]}</p>}
     </div>
   );
-
+ 
   return (
     <Modal isOpen={isOpen} onClose={close} title="Change Password">
       <form onSubmit={submit} className="space-y-4" noValidate>
@@ -97,11 +98,12 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
           <Button type="button" variant="secondary" onClick={close} disabled={saving}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" disabled={saving}>
-            {saving ? 'Changing...' : 'Change Password'}
+          <Button type="submit" isLoading={saving}>
+            Change Password
           </Button>
         </div>
       </form>
     </Modal>
   );
 }
+ 
