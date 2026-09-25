@@ -1,15 +1,8 @@
-import { apiRequest } from './apiClient';
+import { apiRequest, API_URL } from './apiClient';
 
 import { SUPPORTED_EXTENSIONS } from '../types';
 
 import type { ProjectFile } from '../types';
-
-/**
- * ROOT-CAUSE FIX: raw fetch() does not go through apiRequest, so a relative '/api/...'
- * hit the Vite dev server (which answered with index.html). This MUST resolve to the same
- * backend base URL that apiClient.ts uses. Adjust the env var name if yours differs.
- */
-const API_BASE_URL = String(import.meta.env.VITE_API_URL ?? 'http://localhost:3001').replace(/\/$/, '');
 
 type ApiFile = {
   id: string;
@@ -106,7 +99,7 @@ async function fetchFileBlob(file: ProjectFile, failureMessage: string): Promise
 
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}/api/files/${encodeURIComponent(file.id)}`, {
+    response = await fetch(`${API_URL}/api/files/${encodeURIComponent(file.id)}`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });
