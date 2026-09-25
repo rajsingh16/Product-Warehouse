@@ -109,7 +109,7 @@ export function Projects() {
         ===================================================== */}
     <div className="hidden min-h-0 min-w-0 flex-1 md:flex md:flex-col">
 
-      <div className="min-h-0 min-w-0 flex-1 overflow-auto">
+      <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
         <ProjectTable
           projects={visibleProjects}
           onEdit={

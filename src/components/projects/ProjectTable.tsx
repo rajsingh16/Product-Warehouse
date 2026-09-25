@@ -23,12 +23,14 @@ export function ProjectTable({ projects, onEdit, onDelete }: ProjectTableProps) 
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white">
-      {/* Single scroll container */}
-      <div className="max-h-[520px] overflow-auto">
-        <table className="w-full min-w-[680px] text-left text-sm">
-          <thead className="sticky top-0 z-20 bg-slate-50">
-            <tr className="sticky border-b border-slate-200">
+    <div className="flex h-full min-w-0 min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white">
+      {/* Single scroll container — fills whatever height the parent flex gives it */}
+      <div className="min-h-0 flex-1 overflow-auto">
+
+        <table className="w-full min-w-[720px] text-left text-sm">
+
+          <thead className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50">
+            <tr className=" border-b border-slate-200">
               <th className="sticky top-0 bg-slate-50 px-4 py-3 font-medium text-slate-600">
                 Project Name
               </th>
